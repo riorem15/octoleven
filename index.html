@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html class="light" lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+  <title>Octoleven - Couple PAP & Widget Android</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  
+  <!-- Custom Neo-Brutalism Styles -->
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#ad2c4e"/>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-low": "#fff0f1",
+            "surface-dim": "#ebd5d6",
+            "on-error": "#ffffff",
+            "surface-container": "#ffe9ea",
+            "on-tertiary-fixed": "#001e2e",
+            "tertiary-fixed-dim": "#86ceff",
+            "surface-container-highest": "#f4dddf",
+            "secondary-container": "#fed74c",
+            "on-error-container": "#93000a",
+            "on-primary-container": "#6e0027",
+            "tertiary-fixed": "#c8e6ff",
+            "on-secondary-fixed": "#231b00",
+            "inverse-on-surface": "#ffecee",
+            "primary-fixed-dim": "#ffb2bd",
+            "surface": "#fff8f7",
+            "surface-bright": "#fff8f7",
+            "inverse-surface": "#3b2d2f",
+            "primary": "#ad2c4e",
+            "on-tertiary-fixed-variant": "#004c6d",
+            "outline": "#8b7074",
+            "secondary-fixed-dim": "#e9c339",
+            "on-tertiary-container": "#003852",
+            "on-surface-variant": "#574144",
+            "on-background": "#25181a",
+            "on-primary": "#ffffff",
+            "tertiary": "#00658f",
+            "inverse-primary": "#ffb2bd",
+            "outline-variant": "#debfc2",
+            "tertiary-container": "#4ea5d9",
+            "secondary-fixed": "#ffe07e",
+            "on-secondary": "#ffffff",
+            "primary-fixed": "#ffd9dd",
+            "on-secondary-fixed-variant": "#564500",
+            "surface-container-lowest": "#ffffff",
+            "on-primary-fixed-variant": "#8c1037",
+            "on-tertiary": "#ffffff",
+            "secondary": "#725c00",
+            "primary-container": "#ff6b8a",
+            "on-surface": "#25181a",
+            "surface-variant": "#f4dddf",
+            "on-secondary-container": "#735d00",
+            "error": "#ba1a1a",
+            "background": "#fff8f7",
+            "surface-container-high": "#fae3e4",
+            "on-primary-fixed": "#400013",
+            "surface-tint": "#ad2c4e",
+            "error-container": "#ffdad6"
+          },
+          fontFamily: {
+            "caption": ["DM Sans", "sans-serif"],
+            "body-lg": ["DM Sans", "sans-serif"],
+            "label-bold": ["DM Sans", "sans-serif"],
+            "headline-lg-mobile": ["Plus Jakarta Sans", "sans-serif"],
+            "body-md": ["DM Sans", "sans-serif"],
+            "display-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-md": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-lg": ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md selection:bg-primary-container selection:text-on-primary-container pb-28">
+
+  <!-- ==================== LOGIN SCREEN OVERLAY ==================== -->
+  <div id="loginScreen" class="fixed inset-0 z-[100] bg-surface flex flex-col items-center justify-center p-6 text-center animate-fadeIn overflow-y-auto">
+    <div class="max-w-xs w-full space-y-5 my-auto">
+      <div class="w-20 h-20 mx-auto bg-primary-container rounded-3xl neo-border neo-shadow flex items-center justify-center rotate-3">
+        <span class="text-4xl">❤️</span>
+      </div>
+      <div>
+        <h1 class="font-display-lg text-3xl text-primary font-extrabold tracking-tight">Octoleven</h1>
+        <p class="text-xs text-on-surface-variant font-medium mt-1">Aplikasi Privat PAP Pasangan Real-Time</p>
+      </div>
+
+      <!-- Auth Form Container -->
+      <div class="bg-surface-container neo-border neo-shadow rounded-2xl p-4 text-left space-y-3">
+        <div class="text-center pb-2 mb-3 border-b border-outline-variant/40">
+          <span class="font-label-bold text-xs font-bold text-primary">Login Khusus Pasangan</span>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] font-bold text-on-background">Username (Nama Anda)</label>
+          <input type="text" id="authEmailInput" placeholder="Contoh: Rio" class="w-full bg-surface rounded-xl p-2.5 text-xs neo-input font-medium"/>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] font-bold text-on-background">Kata Sandi Rahasia</label>
+          <input type="password" id="authPasswordInput" placeholder="••••••••" class="w-full bg-surface rounded-xl p-2.5 text-xs neo-input font-medium"/>
+        </div>
+
+        <button type="button" id="authSubmitBtn" onclick="handleAuthSubmit()" class="w-full py-3 bg-secondary-container text-on-secondary-container neo-border rounded-xl font-label-bold text-xs font-bold neo-shadow-sm active-press mt-2">
+          Masuk ke Ruang Pasangan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APP (Hidden until logged in) ==================== -->
+  <div id="mainAppContent" class="hidden flex-col flex-1">
+
+  <div id="toastNotification" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 -translate-y-4 transition-all duration-300 mt-[env(safe-area-inset-top,0px)]">
+    <div class="bg-secondary-container text-on-secondary-container font-label-bold px-5 py-3 rounded-xl neo-border neo-shadow flex items-center gap-3">
+      <span id="toastIcon" class="material-symbols-outlined text-primary text-2xl">favorite</span>
+      <span id="toastMessage">Pesan Notifikasi</span>
+    </div>
+  </div>
+
+  <!-- ==================== TOP APP BAR ==================== -->
+  <header class="w-full top-0 sticky bg-surface border-b-3 border-on-background shadow-[4px_4px_0px_0px_rgba(37,24,26,1)] z-40 pt-[env(safe-area-inset-top,0px)]">
+    <div class="max-w-md mx-auto flex justify-between items-center px-4 py-3 w-full">
+      
+      <!-- Brand & Profile Avatar -->
+      <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('us')">
+        <div class="w-11 h-11 rounded-full overflow-hidden neo-border-sm neo-shadow-sm bg-primary-container flex items-center justify-center relative">
+          <img id="headerUserAvatar" class="w-full h-full object-cover" src="https://api.dicebear.com/7.x/notionists/svg?seed=Rio&backgroundColor=ffdfbf" alt="Avatar"/>
+          <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></span>
+        </div>
+        <div>
+          <h1 class="font-display-lg text-2xl text-primary font-extrabold tracking-tight leading-none">Octoleven</h1>
+          <p class="text-[11px] font-bold text-on-surface-variant flex items-center gap-1">
+            <span id="activeUserLabel">Rio (Kamu)</span>
+            <span class="text-xs">❤️</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Icon (Love Poke) -->
+      <div class="flex items-center gap-2">
+        <!-- Love Poke Button -->
+        <button onclick="sendLovePoke()" title="Kirim Love Poke ke Pasangan" class="w-11 h-11 flex items-center justify-center neo-border rounded-xl bg-primary-container text-on-primary-container neo-shadow-sm active-press hover:bg-primary-fixed-dim transition-colors">
+          <span class="material-symbols-outlined text-white text-2xl" style="font-variation-settings: 'FILL' 1;">favorite</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="max-w-md mx-auto w-full px-4 pt-4 flex-1 flex flex-col">
+
+    <!-- ================================================================
+         TAB 1: BERANDA (HOME DASHBOARD)
+         ================================================================ -->
+    <section id="tab-home" class="tab-content space-y-5 animate-fadeIn">
+      
+      <!-- Welcome & Relationship Duration Banner -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between items-center">
+          <h2 id="homeGreetingText" class="font-headline-lg-mobile text-2xl text-on-background font-extrabold">
+            Hai, kangen ya? ❤️
+          </h2>
+          <span class="text-2xl animate-bounce">✨</span>
+        </div>
+        
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-body-md text-xs font-bold text-on-surface-variant bg-surface-container inline-flex items-center gap-1.5 px-3 py-1 rounded-full neo-border-sm">
+            <span class="material-symbols-outlined text-sm text-primary">favorite</span>
+            <span id="daysTogetherText">Pasangan Baru • 0 hari bersama</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Hero Card: PAP HARI INI -->
+      <div class="bg-primary-container neo-border rounded-2xl p-5 neo-shadow relative overflow-hidden flex flex-col items-center text-center space-y-3">
+        <div class="absolute -top-6 -right-6 w-28 h-28 bg-white/20 rounded-full blur-lg pointer-events-none"></div>
+        <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-secondary/30 rounded-full blur-xl pointer-events-none"></div>
+
+        <div class="inline-block bg-surface px-3 py-1 rounded-full neo-border-sm font-label-bold text-xs text-primary uppercase tracking-wider relative z-10">
+          📸 FITUR UTAMA
+        </div>
+
+        <h3 class="font-headline-md text-2xl font-extrabold text-white relative z-10 uppercase tracking-wide drop-shadow-sm">
+          PAP HARI INI
+        </h3>
+
+        <p id="heroPapStatus" class="font-body-md text-sm text-white/95 relative z-10 max-w-[280px]">
+          Lagi di mana sekarang? Kirim foto buat pasangan & langsung muncul di widget HP-nya!
+        </p>
+
+        <button onclick="openPapModal()" class="w-full py-3.5 bg-surface neo-border rounded-xl font-label-bold text-on-background flex items-center justify-center gap-2 neo-shadow-sm active-press relative z-10 hover:bg-surface-container-low transition-all group">
+          <span class="material-symbols-outlined text-primary text-2xl transition-transform group-hover:rotate-90">add_a_photo</span>
+          <span class="text-base font-bold">+ Ambil / Unggah PAP</span>
+        </button>
+      </div>
+
+      <!-- Quick Actions Bento Grid (Mood & Countdown) -->
+      <div class="grid grid-cols-2 gap-3.5">
+        
+        <!-- Mood Tracker Box -->
+        <div onclick="openMoodPickerModal()" class="bg-secondary-container neo-border rounded-xl p-3.5 neo-shadow-sm aspect-square flex flex-col justify-between cursor-pointer hover:bg-secondary-fixed transition-all active-press group">
+          <div class="flex justify-between items-center">
+            <div class="w-10 h-10 rounded-full bg-surface flex items-center justify-center neo-border-sm text-xl shadow-inner">
+              <span id="partnerMoodEmoji">🥰</span>
+            </div>
+            <span class="text-[10px] font-bold uppercase bg-surface px-2 py-0.5 rounded-full neo-border-sm">Mood</span>
+          </div>
+          <div>
+            <h4 id="partnerMoodLabel" class="font-label-bold text-sm text-on-secondary-container font-bold">Status Pasangan</h4>
+            <p id="partnerMoodText" class="font-caption text-xs text-on-secondary-container/90 mt-0.5 line-clamp-1">"Belum ada status"</p>
+            <span class="text-[10px] font-bold text-primary underline mt-1 inline-block group-hover:translate-x-1 transition-transform">Ganti Mood Kamu →</span>
+          </div>
+        </div>
+
+        <!-- Date Countdown Box -->
+        <div onclick="openAgendaModal()" class="bg-tertiary-container neo-border rounded-xl p-3.5 neo-shadow-sm aspect-square flex flex-col justify-between cursor-pointer hover:bg-tertiary-fixed transition-all active-press group">
+          <div class="flex justify-between items-center">
+            <div class="w-10 h-10 rounded-full bg-surface flex items-center justify-center neo-border-sm">
+              <span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+            </div>
+            <span class="text-[10px] font-bold uppercase bg-surface px-2 py-0.5 rounded-full neo-border-sm">Agenda</span>
+          </div>
+          <div>
+            <h4 class="font-label-bold text-sm text-on-tertiary-container font-bold">Agenda Terdekat</h4>
+            <p class="font-caption text-xs text-on-tertiary-container/90 mt-0.5 font-medium">Belum ada agenda</p>
+            <span class="text-[11px] font-bold text-white bg-tertiary px-2 py-0.5 rounded-md inline-block mt-1 hidden"></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Live Widget Preview Teaser -->
+      <div class="bg-surface-container-high neo-border rounded-xl p-4 neo-shadow flex items-center justify-between gap-3">
+        <div class="space-y-1">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></span>
+            <span class="font-label-bold text-xs uppercase tracking-wider text-primary font-bold">Widget Android Aktif</span>
+          </div>
+          <h4 class="font-label-bold text-sm font-bold text-on-background">Sinkron Otomatis ke HP Pasangan</h4>
+          <p class="text-xs text-on-surface-variant">Setiap foto baru langsung tampil di layar depan HP.</p>
+        </div>
+        <button onclick="switchTab('widget')" class="shrink-0 px-3 py-2 bg-secondary-container neo-border-sm rounded-lg font-label-bold text-xs flex items-center gap-1 active-press hover:bg-secondary-fixed">
+          <span>Lihat Widget</span>
+          <span class="material-symbols-outlined text-sm">open_in_new</span>
+        </button>
+      </div>
+
+      <!-- Recent Drops (Koleksi PAP Terbaru) -->
+      <div class="space-y-2.5">
+        <div class="flex justify-between items-end">
+          <div>
+            <h3 class="font-headline-md text-lg font-extrabold text-on-background">PAP Terbaru</h3>
+            <p class="text-xs text-on-surface-variant">Momen spontan hari ini</p>
+          </div>
+          <span onclick="switchTab('feed')" class="font-label-bold text-xs text-primary cursor-pointer hover:underline font-bold flex items-center gap-0.5">
+            Lihat Semua <span class="material-symbols-outlined text-sm">arrow_forward</span>
+          </span>
+        </div>
+
+        <div id="homeRecentReel" class="bg-surface-container-low neo-border rounded-xl p-3 neo-shadow flex gap-3 overflow-x-auto snap-x snap-mandatory hide-scrollbar">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================================================================
+         TAB 2: FEED PRIVAT (MEMORI KITA)
+         ================================================================ -->
+    <section id="tab-feed" class="tab-content space-y-5 hidden animate-fadeIn">
+      
+      <!-- Feed Header & Filter -->
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="font-headline-lg-mobile text-2xl text-on-background font-extrabold">Memori Kita 💌</h2>
+            <p class="text-xs text-on-surface-variant">Galeri privat hanya untuk kalian berdua</p>
+          </div>
+          
+          <button onclick="openPapModal()" class="px-3 py-2 bg-primary-container text-white neo-border-sm rounded-xl font-label-bold text-xs flex items-center gap-1 active-press hover:bg-primary">
+            <span class="material-symbols-outlined text-sm">add_photo_alternate</span>
+            <span>+ PAP</span>
+          </button>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+          <button onclick="filterFeed('all')" id="filter-all" class="feed-filter-btn px-3.5 py-1.5 rounded-full neo-border-sm bg-secondary-container font-label-bold text-xs text-on-secondary-container active-press">
+            Semua
+          </button>
+        </div>
+      </div>
+
+      <!-- Feed Stream Cards Container -->
+      <div id="feedStream" class="flex flex-col gap-5">
+        <!-- Feed cards injected by app.js -->
+      </div>
+
+    </section>
+
+    <!-- ================================================================
+         TAB 3: SIMULASI WIDGET ANDROID
+         ================================================================ -->
+    <section id="tab-widget" class="tab-content space-y-5 hidden animate-fadeIn">
+      
+      <!-- Widget Intro Copy -->
+      <div class="space-y-1">
+        <div class="inline-block bg-tertiary-container text-on-tertiary-container text-[11px] font-bold px-2.5 py-0.5 rounded-full neo-border-sm">
+          📱 SIMULASI LAYAR HP ANDROID
+        </div>
+        <h2 class="font-headline-lg-mobile text-2xl text-on-background font-extrabold">Widget Layar Utama</h2>
+        <p class="text-xs text-on-surface-variant">Lihat tampilan widget Octoleven langsung di Home Screen Android pasangan.</p>
+      </div>
+
+      <!-- Widget Size Selector -->
+      <div class="flex gap-1.5 flex-wrap">
+        <button onclick="setWidgetSize('landscape')" id="btnWidgetLandscape" class="flex-1 py-2 px-2 rounded-xl neo-border-sm font-label-bold text-xs bg-secondary-container text-on-secondary-container active-press whitespace-nowrap">
+          4x2 Memanjang (Foto Kiri)
+        </button>
+        <button onclick="setWidgetSize('medium')" id="btnWidgetMedium" class="flex-1 py-2 px-2 rounded-xl neo-border-sm font-label-bold text-xs bg-surface text-on-surface-variant active-press whitespace-nowrap">
+          4x2 Penuh
+        </button>
+        <button onclick="setWidgetSize('small')" id="btnWidgetSmall" class="flex-1 py-2 px-2 rounded-xl neo-border-sm font-label-bold text-xs bg-surface text-on-surface-variant active-press whitespace-nowrap">
+          2x2 Kotak
+        </button>
+      </div>
+
+      <!-- Android Phone Frame Simulation Mockup -->
+      <div class="flex justify-center py-2">
+        <div class="android-phone-frame p-4 flex flex-col justify-between" style="min-height: 500px;">
+          <div class="android-camera-hole"></div>
+
+          <!-- Android Status Bar -->
+          <div class="flex justify-between items-center text-white/80 text-[11px] font-bold px-2 pt-1">
+            <span id="androidClock">12:30</span>
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[14px]">wifi</span>
+              <span class="material-symbols-outlined text-[14px]">signal_cellular_alt</span>
+              <span class="text-[10px]">95%</span>
+              <span class="material-symbols-outlined text-[14px]">battery_full</span>
+            </div>
+          </div>
+
+          <!-- Date & Google Search Bar Minimal -->
+          <div class="px-2 pt-3 text-center">
+            <div id="androidDateString" class="text-white/70 text-xs font-semibold">Kamis, 13 Agustus</div>
+            <div class="mt-2 bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 flex items-center justify-between text-white/60 text-xs border border-white/10">
+              <span class="flex items-center gap-1.5">
+                <span class="text-[#fed74c] font-bold">G</span> Cari di web...
+              </span>
+              <span class="material-symbols-outlined text-sm">mic</span>
+            </div>
+          </div>
+
+          <!-- THE OCTOLEVEN LIVE WIDGET ON SCREEN -->
+          <div class="my-auto px-1 py-2 w-full">
+            <div id="simulatedWidgetContainer" class="octo-widget bg-surface rounded-2xl p-2.5 relative cursor-pointer w-full transition-all" onclick="openPapModal()">
+              
+              <!-- Content rendered dynamically by app.js based on widgetSize -->
+              <div id="widgetDynamicContent"></div>
+
+            </div>
+          </div>
+
+          <!-- Android Bottom Dock App Icons -->
+          <div class="grid grid-cols-4 gap-2 px-2 pb-2 text-center text-white/80 text-[10px]">
+            <div class="flex flex-col items-center gap-1">
+              <div class="w-11 h-11 rounded-2xl bg-green-500 flex items-center justify-center text-white text-lg shadow">📞</div>
+              <span>Telepon</span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+              <div class="w-11 h-11 rounded-2xl bg-blue-500 flex items-center justify-center text-white text-lg shadow">💬</div>
+              <span>Pesan</span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+              <div class="w-11 h-11 rounded-2xl bg-primary-container flex items-center justify-center text-white text-lg neo-border-sm shadow">❤️</div>
+              <span class="font-bold text-[#ff6b8a]">Octoleven</span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+              <div class="w-11 h-11 rounded-2xl bg-amber-500 flex items-center justify-center text-white text-lg shadow">📷</div>
+              <span>Kamera</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+
+
+
+
+    </section>
+
+    <!-- ================================================================
+         TAB 4: KITA / PAIRING / PROFILE
+         ================================================================ -->
+    <section id="tab-us" class="tab-content space-y-5 hidden animate-fadeIn">
+      
+      <!-- Pairing Status Card -->
+      <div class="bg-surface-container-high rounded-2xl p-5 neo-border neo-shadow relative overflow-hidden flex flex-col gap-4">
+        <!-- Decorative Sticker -->
+        <div class="absolute -top-3 -right-3 bg-secondary-container rounded-full w-14 h-14 flex items-center justify-center neo-border shadow-sm rotate-12">
+          <span class="text-xl">✨</span>
+        </div>
+
+        <div class="space-y-1">
+          <div class="inline-block bg-primary-container text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full neo-border-sm">
+            ❤️ RUANG BERDUA
+          </div>
+          <h2 class="font-headline-lg-mobile text-2xl text-on-background font-extrabold">Hubungkan Pasangan</h2>
+          <p class="text-xs text-on-surface-variant">Saling terhubung dengan kode unik untuk berbagi momen secara privat.</p>
+        </div>
+
+        <!-- Couple Avatar Pairing Visual -->
+        <div class="bg-surface rounded-xl p-4 neo-border-sm flex items-center justify-around">
+          <!-- User 1 -->
+          <div class="flex flex-col items-center gap-1">
+            <div class="relative">
+              <div onclick="document.getElementById('avatarUploadInput').click()" class="w-14 h-14 rounded-full overflow-hidden neo-border bg-blue-100 cursor-pointer group active:scale-95 transition-transform">
+                <img id="coupleAvatar1" src="https://api.dicebear.com/7.x/notionists/svg?seed=Rio&backgroundColor=ffdfbf" alt="Kamu" class="w-full h-full object-cover group-hover:opacity-80 transition-opacity"/>
+              </div>
+              <div class="absolute -bottom-1 -right-1 bg-surface neo-border-sm rounded-full w-6 h-6 flex items-center justify-center pointer-events-none shadow-sm">
+                <span class="material-symbols-outlined text-[12px] text-primary">edit</span>
+              </div>
+            </div>
+            <span id="coupleName1" class="font-label-bold text-xs font-bold">Kamu 💙</span>
+            <input type="file" id="avatarUploadInput" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)"/>
+          </div>
+
+          <!-- Heart Link Icon -->
+          <div class="flex flex-col items-center">
+            <div class="w-9 h-9 rounded-full bg-primary-container text-white flex items-center justify-center neo-border-sm neo-pulse">
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">favorite</span>
+            </div>
+            <span class="text-[10px] font-bold text-green-600 mt-1">● Terhubung</span>
+          </div>
+
+          <!-- User 2 -->
+          <div class="flex flex-col items-center gap-1">
+            <div class="w-14 h-14 rounded-full overflow-hidden neo-border bg-pink-100">
+              <img id="coupleAvatar2" src="https://api.dicebear.com/7.x/notionists/svg?seed=Nindya&backgroundColor=ffd5dc" alt="Pasangan" class="w-full h-full object-cover"/>
+            </div>
+            <span id="coupleName2" class="font-label-bold text-xs font-bold">Pasangan ❤️</span>
+          </div>
+        </div>
+
+
+      </div>
+
+      <!-- (Gabung Kode Pasangan dihapus karena sudah di-hardcode otomatis) -->
+
+      <!-- Love Statistics Bento -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-surface neo-border rounded-xl p-3 neo-shadow-sm">
+          <div class="text-xl font-extrabold text-primary" id="statTotalPap">24</div>
+          <div class="text-[10px] font-bold text-on-surface-variant uppercase mt-1">Total PAP</div>
+        </div>
+        <div class="bg-surface neo-border rounded-xl p-3 neo-shadow-sm">
+          <div class="text-xl font-extrabold text-tertiary">100%</div>
+          <div class="text-[10px] font-bold text-on-surface-variant uppercase mt-1">Privat</div>
+        </div>
+      </div>
+
+
+
+    </section>
+
+  </main>
+
+  <!-- ==================== BOTTOM NAVIGATION BAR ==================== -->
+  <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-surface border-t-3 border-on-background shadow-[0px_-4px_0px_0px_rgba(37,24,26,1)] z-40 flex justify-around items-center px-3 pb-[env(safe-area-inset-bottom,0px)] h-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+    
+    <!-- Tab 1: Beranda -->
+    <button onclick="switchTab('home')" id="nav-home" class="nav-item flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl border-2 border-on-background py-1.5 px-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:scale-95 transition-all flex-1 mx-1">
+      <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">favorite</span>
+      <span class="font-label-bold text-[11px] font-bold mt-0.5">Beranda</span>
+    </button>
+
+    <!-- Tab 2: Memori Feed -->
+    <button onclick="switchTab('feed')" id="nav-feed" class="nav-item flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded-xl py-1.5 px-3 active:scale-95 transition-all flex-1 mx-1">
+      <span class="material-symbols-outlined text-xl">grid_view</span>
+      <span class="font-label-bold text-[11px] font-bold mt-0.5">Memori</span>
+    </button>
+
+    <!-- Tab 3: Widget Android -->
+    <button onclick="switchTab('widget')" id="nav-widget" class="nav-item flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded-xl py-1.5 px-3 active:scale-95 transition-all flex-1 mx-1">
+      <span class="material-symbols-outlined text-xl">widgets</span>
+      <span class="font-label-bold text-[11px] font-bold mt-0.5">Widget</span>
+    </button>
+
+    <!-- Tab 4: Kita / Profil -->
+    <button onclick="switchTab('us')" id="nav-us" class="nav-item flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded-xl py-1.5 px-3 active:scale-95 transition-all flex-1 mx-1">
+      <span class="material-symbols-outlined text-xl">diversity_1</span>
+      <span class="font-label-bold text-[11px] font-bold mt-0.5">Kita</span>
+    </button>
+
+  </nav>
+
+  <!-- ================================================================
+       MODAL: AMBIL & UNGGAH PAP (PHOTO CAPTURE / UPLOAD)
+       ================================================================ -->
+  <div id="papModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-surface w-full max-w-md rounded-2xl neo-border neo-shadow-lg p-5 max-h-[90vh] overflow-y-auto flex flex-col gap-4 animate-scaleUp">
+      
+      <!-- Modal Header -->
+      <div class="flex justify-between items-center border-b-2 border-on-background pb-3">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-2xl">add_a_photo</span>
+          <h3 class="font-headline-md text-lg font-extrabold text-on-background">Kirim PAP Baru</h3>
+        </div>
+        <button onclick="closePapModal()" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center neo-border-sm active-press">
+          <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+      </div>
+
+      <!-- Media Capture / Selection Area -->
+      <div class="relative w-full aspect-square rounded-xl overflow-hidden neo-border bg-surface-dim flex flex-col items-center justify-center">
+        
+        <!-- Live Video Element (Camera) -->
+        <video id="cameraVideo" class="w-full h-full object-cover hidden" style="transform: scaleX(-1);" autoplay playsinline muted></video>
+        
+        <!-- Image Preview Element -->
+        <img id="imagePreview" class="w-full h-full object-cover hidden" alt="Pratinjau Foto"/>
+        
+        <!-- Canvas for Capturing Frame -->
+        <canvas id="captureCanvas" class="hidden"></canvas>
+
+        <!-- Initial Placeholder State -->
+        <div id="cameraPlaceholder" class="flex flex-col items-center gap-3 p-4 text-center">
+          <div class="w-16 h-16 rounded-full bg-primary-container text-white flex items-center justify-center neo-border">
+            <span class="material-symbols-outlined text-3xl">photo_camera</span>
+          </div>
+          <div>
+            <p class="font-label-bold text-sm font-bold text-on-background">Ambil Foto atau Pilih dari Galeri</p>
+            <p class="text-xs text-on-surface-variant">Tunjukkan ke pasangan apa yang lagi kamu lakuin!</p>
+          </div>
+          
+          <div class="flex flex-wrap gap-2 justify-center mt-2">
+            <button onclick="startLiveCamera()" class="px-3.5 py-2 bg-primary-container text-white rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1 active-press">
+              <span class="material-symbols-outlined text-sm">videocam</span>
+              <span>Buka Kamera</span>
+            </button>
+            
+            <label class="px-3.5 py-2 bg-secondary-container text-on-secondary-container rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1 active-press cursor-pointer">
+              <span class="material-symbols-outlined text-sm">upload_file</span>
+              <span>Pilih Galeri</span>
+              <input type="file" id="filePickerInput" accept="image/*" class="hidden" onchange="handleFileSelected(event)"/>
+            </label>
+          </div>
+
+          <!-- Sample Preset Photos Quick Pick -->
+          <div class="mt-3 pt-3 border-t border-outline-variant w-full">
+            <p class="text-[11px] font-bold text-on-surface-variant mb-2">Atau coba sampel foto estetik:</p>
+            <div class="flex gap-2 justify-center">
+              <img onclick="pickSamplePhoto(0)" src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=150&auto=format&fit=crop&q=80" alt="Sample 1" class="w-12 h-12 rounded-lg neo-border-sm object-cover cursor-pointer hover:scale-105 transition-transform"/>
+              <img onclick="pickSamplePhoto(1)" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80" alt="Sample 2" class="w-12 h-12 rounded-lg neo-border-sm object-cover cursor-pointer hover:scale-105 transition-transform"/>
+              <img onclick="pickSamplePhoto(2)" src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=150&auto=format&fit=crop&q=80" alt="Sample 3" class="w-12 h-12 rounded-lg neo-border-sm object-cover cursor-pointer hover:scale-105 transition-transform"/>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Active Camera Controls Overlay -->
+        <div id="activeCameraControls" class="absolute bottom-3 left-0 w-full flex justify-center items-center gap-4 hidden z-20">
+          <button onclick="stopLiveCamera()" class="w-10 h-10 rounded-full bg-surface neo-border-sm flex items-center justify-center text-xs active-press" title="Batal">
+            <span class="material-symbols-outlined text-sm">close</span>
+          </button>
+          <div onclick="takeCameraSnap()" class="shutter-btn">
+            <div class="shutter-inner"></div>
+          </div>
+          <button onclick="switchCameraFacing()" class="w-10 h-10 rounded-full bg-surface neo-border-sm flex items-center justify-center text-xs active-press" title="Putar Kamera">
+            <span class="material-symbols-outlined text-sm">flip_camera_android</span>
+          </button>
+        </div>
+
+        <!-- Selected Badge Overlay on Image Preview -->
+        <div id="previewBadgeOverlay" class="absolute top-3 left-3 sticker-badge bg-secondary-container text-on-secondary-container text-xs px-2.5 py-1 hidden z-10">
+          Cafe ☕
+        </div>
+
+      </div>
+
+      <!-- Quick Sticker Badges Picker -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-on-surface-variant">Pilih Stiker Status:</label>
+        <div class="flex gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+          <button type="button" onclick="selectSticker('Cafe ☕')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors">☕ Cafe</button>
+          <button type="button" onclick="selectSticker('Kuliah 📚')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors">📚 Kuliah</button>
+          <button type="button" onclick="selectSticker('Kangen 🥺')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors">🥺 Kangen</button>
+          <button type="button" onclick="selectSticker('Kerja 💻')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors">💻 Kerja</button>
+          <button type="button" onclick="selectSticker('Jalan 🛵')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors">🛵 Jalan</button>
+          <button type="button" onclick="selectSticker('Makan 🍜')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors">🍜 Makan</button>
+        </div>
+      </div>
+
+      <!-- Caption Input Field -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between items-center">
+          <label for="papCaptionInput" class="text-xs font-bold text-on-surface-variant">Tulis Caption Manis:</label>
+          <span class="text-[10px] text-outline font-bold">Maks. 100 karakter</span>
+        </div>
+        <textarea id="papCaptionInput" rows="2" maxlength="100" class="w-full bg-surface-container-lowest rounded-xl p-2.5 text-xs font-medium neo-input" placeholder="Lagi mikirin kamu nih..."></textarea>
+      </div>
+
+
+
+      <!-- Submit Button -->
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="closePapModal()" class="flex-1 py-3 bg-surface neo-border rounded-xl font-label-bold text-xs active-press">
+          Batal
+        </button>
+        <button type="button" onclick="submitNewPap()" class="flex-[2] py-3 bg-primary-container text-white neo-border rounded-xl font-label-bold text-xs flex items-center justify-center gap-1.5 active-press hover:bg-primary transition-colors">
+          <span class="material-symbols-outlined text-base">send</span>
+          <span>Kirim PAP & Update Widget</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL: MOOD TRACKER PICKER
+       ================================================================ -->
+  <div id="moodModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-surface w-full max-w-md rounded-2xl neo-border neo-shadow-lg p-5 flex flex-col gap-4 animate-scaleUp">
+      <div class="flex justify-between items-center border-b-2 border-on-background pb-3">
+        <h3 class="font-headline-md text-lg font-extrabold text-on-background">Gimana Perasaanmu Sekarang?</h3>
+        <button onclick="closeMoodPickerModal()" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center neo-border-sm active-press">
+          <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+      </div>
+
+      <p class="text-xs text-on-surface-variant">Pasangan kamu akan melihat status perasaanmu di Beranda aplikasinya.</p>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <button onclick="setUserMood('🥰', 'Lagi bucin & kangen banget!')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
+          <span class="text-2xl">🥰</span>
+          <div>
+            <div class="text-xs font-bold">Bucin & Kangen</div>
+            <div class="text-[10px] text-on-surface-variant">Penuh cinta</div>
+          </div>
+        </button>
+
+        <button onclick="setUserMood('😊', 'Happy & bersemangat hari ini!')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
+          <span class="text-2xl">😊</span>
+          <div>
+            <div class="text-xs font-bold">Bahagia</div>
+            <div class="text-[10px] text-on-surface-variant">Hari menyenangkan</div>
+          </div>
+        </button>
+
+        <button onclick="setUserMood('😴', 'Ngantuk & butuh pelukan.')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
+          <span class="text-2xl">😴</span>
+          <div>
+            <div class="text-xs font-bold">Capek / Ngantuk</div>
+            <div class="text-[10px] text-on-surface-variant">Butuh istirahat</div>
+          </div>
+        </button>
+
+        <button onclick="setUserMood('🍜', 'Laper banget, ayo makan bareng!')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
+          <span class="text-2xl">🍜</span>
+          <div>
+            <div class="text-xs font-bold">Laper</div>
+            <div class="text-[10px] text-on-surface-variant">Mau jajan</div>
+          </div>
+        </button>
+
+        <button onclick="setUserMood('🥺', 'Lagi sedih & pengen ditemenin.')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
+          <span class="text-2xl">🥺</span>
+          <div>
+            <div class="text-xs font-bold">Manja / Sedih</div>
+            <div class="text-[10px] text-on-surface-variant">Butuh dihibur</div>
+          </div>
+        </button>
+
+        <button onclick="setUserMood('☕', 'Fokus nugas & produktif.')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
+          <span class="text-2xl">☕</span>
+          <div>
+            <div class="text-xs font-bold">Fokus Kerja</div>
+            <div class="text-[10px] text-on-surface-variant">Lagi produktif</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+    <!-- Modal Agenda (Jadwal Notifikasi) -->
+    <div id="agendaModal" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+      <div class="bg-surface w-full max-w-sm rounded-2xl p-5 neo-shadow border-3 border-on-background transform scale-95 transition-transform duration-300" id="agendaModalContent">
+        
+        <div class="flex justify-between items-center mb-4 border-b-2 border-outline-variant/30 pb-2">
+          <h3 class="font-headline-lg-mobile text-xl font-extrabold text-on-background flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">calendar_month</span> Buat Agenda
+          </h3>
+          <button onclick="closeAgendaModal()" class="w-7 h-7 rounded-full bg-surface-variant flex items-center justify-center active-press neo-border-sm">
+            <span class="material-symbols-outlined text-sm">close</span>
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-on-surface-variant">Nama Acara / Kencan:</label>
+            <input type="text" id="agendaTitleInput" class="w-full bg-surface-container-lowest rounded-xl p-2.5 text-xs font-medium neo-input" placeholder="Contoh: Nonton Bioskop / Dinner">
+          </div>
+          
+          <div class="flex gap-2">
+            <div class="space-y-1.5 flex-1">
+              <label class="text-xs font-bold text-on-surface-variant">Tanggal:</label>
+              <input type="date" id="agendaDateInput" class="w-full bg-surface-container-lowest rounded-xl p-2.5 text-xs font-medium neo-input">
+            </div>
+            <div class="space-y-1.5 flex-1">
+              <label class="text-xs font-bold text-on-surface-variant">Jam (Waktu):</label>
+              <input type="time" id="agendaTimeInput" class="w-full bg-surface-container-lowest rounded-xl p-2.5 text-xs font-medium neo-input">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-5">
+          <button type="button" onclick="closeAgendaModal()" class="flex-1 py-3 bg-surface neo-border rounded-xl font-label-bold text-xs active-press">
+            Batal
+          </button>
+          <button type="button" onclick="submitAgenda()" class="flex-[2] py-3 bg-primary-container text-white neo-border rounded-xl font-label-bold text-xs flex items-center justify-center gap-1.5 active-press hover:bg-primary transition-colors">
+            <span class="material-symbols-outlined text-base">alarm</span>
+            <span>Simpan & Pasang Alarm</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div> <!-- End Main App Content -->
+
+  <!-- Supabase Web SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { supabaseConfig, isSupabaseConfigured } from './supabase-config.js';
+    
+    let supabaseClient = null;
+    if (isSupabaseConfigured && window.supabase) {
+      try {
+        supabaseClient = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+      } catch (error) {
+        console.error('Supabase gagal diinisialisasi:', error);
+      }
+    } else {
+      console.info('Supabase belum dikonfigurasi. Edit supabase-config.js.');
+    }
+
+    window.supabaseTools = {
+      configured: Boolean(supabaseClient),
+      client: supabaseClient
+    };
+
+    window.dispatchEvent(new CustomEvent('supabase-ready'));
+  </script>
+
+  <script src="app.js"></script>
+</body>
+</html>

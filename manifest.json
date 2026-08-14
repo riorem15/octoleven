@@ -1,0 +1,21 @@
+{
+  "short_name": "Octoleven",
+  "name": "Octoleven - Couple PAP & Widget",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=192&auto=format&fit=crop&q=80",
+      "type": "image/jpeg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=512&auto=format&fit=crop&q=80",
+      "type": "image/jpeg",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#fff8f7",
+  "theme_color": "#ad2c4e",
+  "display": "standalone",
+  "orientation": "portrait"
+}

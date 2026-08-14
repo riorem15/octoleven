@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">octoleven</string>
+    <string name="title_activity_main">octoleven</string>
+    <string name="package_name">com.octoleven.app</string>
+    <string name="custom_url_scheme">com.octoleven.app</string>
+</resources>

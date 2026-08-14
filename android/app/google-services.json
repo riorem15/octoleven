@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "210029882615",
+    "project_id": "octolevenpap",
+    "storage_bucket": "octolevenpap.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:210029882615:android:52df7fb98df5711d29b7f2",
+        "android_client_info": {
+          "package_name": "com.octoleven.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0m9j7KlqqZ0ZbVujYh8ajps6sHni69Tk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

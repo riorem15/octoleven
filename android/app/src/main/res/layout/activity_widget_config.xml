@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center"
+    android:background="#fff8f7"> <!-- bg-surface from app -->
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pilih Tampilan Widget"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#ad2c4e"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PAP dari siapa yang ingin ditampilkan di widget ini?"
+        android:textSize="14sp"
+        android:textColor="#574144"
+        android:gravity="center"
+        android:layout_marginBottom="32dp" />
+
+    <RadioGroup
+        android:id="@+id/radioGroupUsers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp">
+
+        <RadioButton
+            android:id="@+id/radioAll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Semua (Bergantian / Terbaru)"
+            android:textSize="16sp"
+            android:padding="12dp"
+            android:checked="true" />
+
+        <RadioButton
+            android:id="@+id/radioRio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Hanya Rio"
+            android:textSize="16sp"
+            android:padding="12dp" />
+
+        <RadioButton
+            android:id="@+id/radioNindya"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Hanya Nindya"
+            android:textSize="16sp"
+            android:padding="12dp" />
+    </RadioGroup>
+
+    <Button
+        android:id="@+id/btnSaveConfig"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Simpan &amp; Pasang Widget"
+        android:backgroundTint="#ff6b8a"
+        android:textColor="#FFFFFF"
+        android:padding="16dp"
+        android:textStyle="bold" />
+
+</LinearLayout>
