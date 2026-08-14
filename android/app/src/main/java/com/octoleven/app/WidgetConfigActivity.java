@@ -58,10 +58,14 @@ public class WidgetConfigActivity extends Activity {
             // It is the responsibility of the configuration activity to update the app widget
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
             
-            // We need to trigger an update manually since the widget provider's onUpdate is not called after config
-            // Because we don't know exactly which class was used (Landscape, Full, Square), we just broadcast an update
-            // Actually, we can just instantiate the base class or call updateAppWidget if it was public/static.
-            // Since it's protected, let's just trigger a broadcast.
+            // Trigger update ke 3 class widget (Landscape, Full, Square) agar langsung refresh
+            Class<?>[] widgetClasses = {PapWidgetLandscape.class, PapWidgetFull.class, PapWidgetSquare.class};
+            for (Class<?> widgetClass : widgetClasses) {
+                Intent updateIntent = new Intent(this, widgetClass);
+                updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+                updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[]{appWidgetId});
+                sendBroadcast(updateIntent);
+            }
             
             Intent resultValue = new Intent();
             resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);

@@ -22,6 +22,10 @@ public class PapWidget extends AppWidgetProvider {
     public static final String PREFS_NAME = "PapWidgetPrefs";
     public static final String PREF_IMAGE_URL_KEY = "last_pap_url_";
     public static final String PREF_WIDGET_USER_KEY = "widget_user_"; // "rio", "nindya", "all"
+    public static final String PREF_SENDER_NAME_KEY = "sender_name_";
+    public static final String PREF_CAPTION_KEY = "caption_";
+    public static final String PREF_TIME_KEY = "time_";
+    public static final String PREF_TAG_KEY = "tag_";
 
     protected int getLayoutId() {
         return R.layout.pap_widget_full; // Default
@@ -34,22 +38,24 @@ public class PapWidget extends AppWidgetProvider {
         
         // Ambil URL terakhir berdasarkan user
         String imageUrl = prefs.getString(PREF_IMAGE_URL_KEY + selectedUser, null);
-        if (imageUrl == null) {
-            // Fallback ke yang umum jika spesifik tidak ada
-            imageUrl = prefs.getString("last_pap_url", null);
-        }
+
+        // Ambil data tambahan
+        String senderName = prefs.getString(PREF_SENDER_NAME_KEY + selectedUser, "Pasangan");
+        String caption = prefs.getString(PREF_CAPTION_KEY + selectedUser, "");
+        String timeText = prefs.getString(PREF_TIME_KEY + selectedUser, "Baru saja");
+        String tagText = prefs.getString(PREF_TAG_KEY + selectedUser, "PAP ✨");
 
         // Buat View untuk Widget
         RemoteViews views = new RemoteViews(context.getPackageName(), getLayoutId());
 
         // Kalau ada URL, download gambarnya
         if (imageUrl != null && !imageUrl.isEmpty()) {
-            views.setTextViewText(R.id.widget_text, "PAP Baru!");
             
+            final String finalImageUrl = imageUrl; // Fix for lambda expression
             // Download gambar di thread terpisah agar tidak memblokir UI
             new Thread(() -> {
                 try {
-                    URL url = new URL(imageUrl);
+                    URL url = new URL(finalImageUrl);
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setDoInput(true);
                     connection.connect();
@@ -59,7 +65,17 @@ public class PapWidget extends AppWidgetProvider {
                     // Update UI di main thread
                     new Handler(Looper.getMainLooper()).post(() -> {
                         views.setImageViewBitmap(R.id.widget_image, bitmap);
-                        views.setTextViewText(R.id.widget_text, ""); // Sembunyikan teks kalau gambar berhasil
+                        
+                        if (getLayoutId() == R.layout.pap_widget_landscape) {
+                            views.setTextViewText(R.id.widget_sender_name, senderName + " ❤️");
+                            views.setTextViewText(R.id.widget_caption, "\"" + caption + "\"");
+                            views.setTextViewText(R.id.widget_time, timeText);
+                            views.setTextViewText(R.id.widget_tag, tagText);
+                        } else {
+                            // Untuk widget tipe lain yang hanya punya widget_text
+                            views.setTextViewText(R.id.widget_text, "");
+                        }
+                        
                         appWidgetManager.updateAppWidget(appWidgetId, views);
                     });
                 } catch (Exception e) {
@@ -67,7 +83,14 @@ public class PapWidget extends AppWidgetProvider {
                 }
             }).start();
         } else {
-            views.setTextViewText(R.id.widget_text, "Belum ada PAP");
+            if (getLayoutId() != R.layout.pap_widget_landscape) {
+                views.setTextViewText(R.id.widget_text, "Belum ada PAP");
+            } else {
+                views.setTextViewText(R.id.widget_caption, "\"Belum ada PAP dari " + selectedUser + "\"");
+                views.setTextViewText(R.id.widget_sender_name, "Pasangan ❤️");
+                views.setTextViewText(R.id.widget_time, "-");
+                views.setTextViewText(R.id.widget_tag, "Menunggu...");
+            }
         }
 
         // Aksi ketika Widget di-klik: Buka aplikasi utama
@@ -75,6 +98,11 @@ public class PapWidget extends AppWidgetProvider {
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_image, pendingIntent);
+        
+        // Untuk landscape, klik tombol heart buka aplikasi juga
+        if (getLayoutId() == R.layout.pap_widget_landscape) {
+             views.setOnClickPendingIntent(R.id.widget_heart_btn, pendingIntent);
+        }
 
         // Update widget
         appWidgetManager.updateAppWidget(appWidgetId, views);

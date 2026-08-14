@@ -1006,7 +1006,14 @@ function updateSimulatedWidget() {
       if (latestMoment.senderName && latestMoment.senderName.toLowerCase().includes("rio")) senderType = "rio";
       if (latestMoment.senderName && latestMoment.senderName.toLowerCase().includes("nindya")) senderType = "nindya";
 
-      window.Capacitor.Plugins.WidgetPlugin.updateWidget({ imageUrl: latestMoment.image, sender: senderType })
+      window.Capacitor.Plugins.WidgetPlugin.updateWidget({ 
+        imageUrl: latestMoment.image, 
+        sender: senderType,
+        senderName: senderName,
+        caption: latestMoment.caption || '',
+        timeText: formatTimeAgo(latestMoment.timestamp),
+        tagText: latestMoment.sticker || 'PAP ✨'
+      })
         .then(() => console.log('Native Android Widget updated successfully!'))
         .catch(err => console.error('Failed to update Native Widget:', err));
     }
@@ -1669,3 +1676,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 10000);
 });
+
+// --- Widget Pinning ---
+window.requestPinWidget = async function() {
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.WidgetPlugin) {
+    try {
+      await window.Capacitor.Plugins.WidgetPlugin.pinWidget();
+      showToast('Berhasil memasang widget!', 'add_to_home_screen');
+    } catch (e) {
+      showToast('Gagal: ' + (e.message || ''), 'error');
+    }
+  } else {
+    showToast('Fitur ini hanya tersedia di HP Android.', 'warning');
+  }
+};
