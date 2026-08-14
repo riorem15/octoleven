@@ -869,6 +869,9 @@ async function handleFeedReaction(momentId, emoji, event) {
       user_name: coupleData.users[currentUser.id]?.name || 'Pasangan',
       emoji
     });
+    
+    // Kirim notifikasi reaksi
+    sendPushNotification('Reaksi Baru! ' + emoji, `${coupleData.users[currentUser.id]?.name || 'Pasangan'} bereaksi pada PAP Anda!`, { event: 'reaction' });
   }
 
   renderFeed(currentFilter);
@@ -918,6 +921,9 @@ async function submitFeedComment(momentId) {
       user_name: activeUser.name,
       text: commentText
     });
+    
+    // Kirim notifikasi komentar
+    sendPushNotification('Komentar Baru! 💬', `${activeUser.name}: "${commentText}"`, { event: 'comment' });
   }
 
   inputEl.value = '';
@@ -1721,6 +1727,10 @@ async function submitAgenda() {
     // Update Lokal & UI
     coupleData.users[currentUser.id].nextDateLabel = title;
     coupleData.users[currentUser.id].nextDateTime = scheduleDate.toISOString();
+    
+    // Kirim notifikasi agenda
+    sendPushNotification('Agenda Baru Pasangan! 📅', `${currentUser.name} akan ${title} pada ${scheduleDate.toLocaleString('id-ID')}`, { event: 'agenda' });
+
     updateUIForActiveUser(); // ini tidak meng-update text di index.html, mari kita perbarui
     
     // Manual Update Text di UI (Bento box)
