@@ -248,6 +248,26 @@ function initSupabaseRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => {
       fetchMomentsFromSupabase();
     })
+    .on('broadcast', { event: 'love_poke' }, (payload) => {
+      if (payload.payload.senderId !== currentUser.id) {
+        showToast(`${payload.payload.senderName} lagi kangen kamu! 🥺`, 'favorite');
+        playSound('heart');
+        vibrate([50, 100, 50, 100, 50]);
+        spawnFloatingEmoji('❤️', window.innerWidth / 2, 100);
+        
+        // Coba trigger Local Notification jika app terbuka/di background sementara
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+            window.Capacitor.Plugins.LocalNotifications.schedule({
+                notifications: [{
+                    title: 'Panggilan Rindu! 🥺',
+                    body: `${payload.payload.senderName} lagi kangen banget sama kamu!`,
+                    id: Math.floor(Math.random() * 100000),
+                    schedule: { at: new Date(Date.now() + 1000) }
+                }]
+            });
+        }
+      }
+    })
     .subscribe();
 
   fetchMomentsFromSupabase();
@@ -1354,6 +1374,17 @@ async function submitNewPap() {
       if (dbError) throw dbError;
 
       showToast('PAP tersimpan di Supabase! 💖', 'check_circle');
+      
+      // Kirim Push Notification dengan payload widget update
+      sendPushNotification('PAP Baru Masuk! 📸', `${activeUser.name} ngirim PAP nih, cek sekarang!`, { 
+        event: 'new_pap',
+        widget_update: 'true',
+        imageUrl: publicPhotoUrl,
+        senderName: activeUser.name,
+        caption: caption || '',
+        tagText: selectedSticker || 'PAP ✨'
+      });
+      
       fetchMomentsFromSupabase();
       return;
     } catch (err) {
@@ -1433,6 +1464,53 @@ async function sendLovePoke() {
 
   spawnFloatingEmoji('❤️', window.innerWidth - 60, 60);
   spawnFloatingEmoji('🥰', window.innerWidth - 80, 80);
+
+  if (isSupabaseReady() && supabaseRealtimeChannel && currentUser) {
+    supabaseRealtimeChannel.send({
+      type: 'broadcast',
+      event: 'love_poke',
+      payload: { 
+        senderId: currentUser.id, 
+        senderName: activeUser.name 
+      }
+    });
+  }
+
+  // Kirim ke backend Vercel untuk Push Notification
+  sendPushNotification('Panggilan Rindu! 🥺', `${activeUser.name} kangen banget sama kamu!`, { event: 'love_poke' });
+}
+
+// --- Push Notification Helper ---
+async function sendPushNotification(title, body, data = {}) {
+    if (!isSupabaseReady() || !currentUser) return;
+    try {
+        const supabase = getSupabase();
+        
+        // Ambil token pasangan dari Supabase
+        const { data: members, error } = await supabase
+            .from('members')
+            .select('fcm_token')
+            .neq('id', currentUser.id)
+            .limit(1);
+            
+        if (error || !members || members.length === 0 || !members[0].fcm_token) return;
+        
+        const partnerToken = members[0].fcm_token;
+        
+        // Kirim HTTP POST ke Vercel Serverless Function
+        await fetch('/api/fcm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                token: partnerToken,
+                title: title,
+                body: body,
+                data: data
+            })
+        });
+    } catch (err) {
+        console.error('Push error:', err);
+    }
 }
 
 // --- Pairing & Code Helpers ---
