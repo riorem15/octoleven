@@ -642,8 +642,8 @@
       <!-- Media Capture / Selection Area -->
       <div class="relative w-full aspect-square rounded-xl overflow-hidden neo-border bg-surface-dim flex flex-col items-center justify-center">
         
-        <!-- Live Video Element (Camera Viewfinder) -->
-        <video id="cameraVideo" class="w-full h-full object-cover hidden" autoplay playsinline muted></video>
+        <!-- Live Video Element (Camera Viewfinder) - No mirror on any camera -->
+        <video id="cameraVideo" class="w-full h-full object-cover hidden" style="transform: scaleX(1) !important;" autoplay playsinline muted></video>
         
         <!-- Hidden Canvas for Snapshot Capture -->
         <canvas id="captureCanvas" class="hidden"></canvas>

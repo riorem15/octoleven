@@ -1450,8 +1450,8 @@ function openPapModal() {
   updateStickerButtons();
   if (modal) modal.classList.remove('hidden');
 
-  // Automatically start in-app live camera viewfinder for seamless shooting
-  startLiveCamera();
+  // Show placeholder with both Buka Kamera and Pilih Galeri buttons
+  // Do NOT auto-start camera — let user choose
 }
 
 function closePapModal() {
@@ -1577,6 +1577,9 @@ function stopLiveCamera() {
   if (videoEl) videoEl.classList.add('hidden');
   const controls = document.getElementById('activeCameraControls');
   if (controls) controls.classList.add('hidden');
+  // Show placeholder with both buttons again
+  const placeholder = document.getElementById('cameraPlaceholder');
+  if (placeholder && !currentCapturedImage) placeholder.classList.remove('hidden');
 }
 
 function switchCameraFacing() {
