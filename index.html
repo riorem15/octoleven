@@ -642,43 +642,40 @@
       <!-- Media Capture / Selection Area -->
       <div class="relative w-full aspect-square rounded-xl overflow-hidden neo-border bg-surface-dim flex flex-col items-center justify-center">
         
-        <!-- Live Video Element (Camera Viewfinder) - No mirror on any camera -->
-        <video id="cameraVideo" class="w-full h-full object-cover hidden" style="transform: scaleX(1) !important;" autoplay playsinline muted></video>
+        <!-- Live Video Element (Camera) -->
+        <video id="cameraVideo" class="w-full h-full object-cover hidden" style="transform: scaleX(-1);" autoplay playsinline muted></video>
         
-        <!-- Hidden Canvas for Snapshot Capture -->
-        <canvas id="captureCanvas" class="hidden"></canvas>
-
         <!-- Image Preview Element -->
         <img id="imagePreview" class="w-full h-full object-cover hidden" alt="Pratinjau Foto"/>
+        
+        <!-- Canvas for Capturing Frame -->
+        <canvas id="captureCanvas" class="hidden"></canvas>
 
         <!-- Initial Placeholder State -->
         <div id="cameraPlaceholder" class="flex flex-col items-center gap-2.5 p-4 text-center">
-          <div id="placeholderIconContainer" class="w-14 h-14 rounded-full bg-primary-container text-white flex items-center justify-center neo-border text-2xl shadow-sm">
-            📸
+          <div class="w-14 h-14 rounded-full bg-primary-container text-white flex items-center justify-center neo-border">
+            <span class="material-symbols-outlined text-2xl">photo_camera</span>
           </div>
           <div>
-            <p id="placeholderTitle" class="font-label-bold text-xs font-bold text-on-background">Ambil Foto PAP Kamu</p>
-            <p id="placeholderSubtitle" class="text-[11px] text-on-surface-variant">Tunjukkan ke pasangan apa yang lagi kamu lakuin!</p>
+            <p class="font-label-bold text-xs font-bold text-on-background">Ambil Foto atau Pilih dari Galeri</p>
+            <p class="text-[11px] text-on-surface-variant">Tunjukkan ke pasangan apa yang lagi kamu lakuin!</p>
           </div>
           
           <div class="flex flex-wrap gap-2 justify-center mt-1">
-            <button type="button" onclick="takePapPhoto()" class="px-3.5 py-2 bg-primary-container text-white rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1.5 active-press shadow-sm hover:opacity-90 transition-opacity">
-              <span class="material-symbols-outlined text-sm">photo_camera</span>
-              <span id="btnOpenLiveCamText">Buka Kamera</span>
+            <button onclick="startLiveCamera()" class="px-3.5 py-2 bg-primary-container text-white rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1 active-press">
+              <span class="material-symbols-outlined text-sm">videocam</span>
+              <span>Buka Kamera</span>
             </button>
             
-            <button type="button" onclick="choosePapFromGallery()" class="px-3.5 py-2 bg-secondary-container text-on-secondary-container rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1.5 active-press cursor-pointer hover:bg-secondary-container/80 transition-colors">
-              <span class="material-symbols-outlined text-sm">photo_library</span>
+            <label class="px-3.5 py-2 bg-secondary-container text-on-secondary-container rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1 active-press cursor-pointer">
+              <span class="material-symbols-outlined text-sm">upload_file</span>
               <span>Pilih Galeri</span>
-            </button>
-
-            <!-- Hidden File & Camera Inputs for Universal Browser & Mobile Compatibility -->
-            <input type="file" id="nativeCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleFileSelected(event)"/>
-            <input type="file" id="filePickerInput" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,.jpg,.jpeg,.png,.webp" class="hidden" onchange="handleFileSelected(event)"/>
+              <input type="file" id="filePickerInput" accept="image/*" class="hidden" onchange="handleFileSelected(event)"/>
+            </label>
           </div>
 
-          <!-- Sample Preset Quick Pick -->
-          <div id="samplePhotosPicker" class="mt-2 pt-2 border-t border-outline-variant w-full">
+          <!-- Sample Preset Photos Quick Pick -->
+          <div class="mt-2 pt-2 border-t border-outline-variant w-full">
             <p class="text-[10px] font-bold text-on-surface-variant mb-1.5">Atau coba sampel foto estetik:</p>
             <div class="flex gap-2 justify-center">
               <img onclick="pickSamplePhoto(0)" src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=150&auto=format&fit=crop&q=80" alt="Sample 1" class="w-10 h-10 rounded-lg neo-border-sm object-cover cursor-pointer hover:scale-105 transition-transform"/>
@@ -689,31 +686,20 @@
 
         </div>
 
-        <!-- Retake / Change Photo Button Overlay when Image is Previewed -->
-        <div id="retakePhotoOverlay" class="absolute bottom-3 right-3 hidden z-20">
-          <button type="button" onclick="retakePapPhoto()" class="px-3 py-1.5 bg-surface/90 backdrop-blur-sm neo-border-sm rounded-full text-xs font-bold flex items-center gap-1 active-press shadow-sm hover:bg-surface">
-            <span class="material-symbols-outlined text-xs">restart_alt</span>
-            <span>Ganti Foto</span>
-          </button>
-        </div>
-
-        <!-- Active Camera Controls Overlay (for Live Viewfinder) -->
+        <!-- Active Camera Controls Overlay -->
         <div id="activeCameraControls" class="absolute bottom-3 left-0 w-full flex justify-center items-center gap-4 hidden z-20">
-          <button type="button" onclick="stopLiveCamera()" class="w-10 h-10 rounded-full bg-surface neo-border-sm flex items-center justify-center text-xs active-press" title="Batal">
+          <button onclick="stopLiveCamera()" class="w-10 h-10 rounded-full bg-surface neo-border-sm flex items-center justify-center text-xs active-press" title="Batal">
             <span class="material-symbols-outlined text-sm">close</span>
           </button>
-          
-          <!-- Dynamic Shutter Button (Snap Photo) -->
-          <div onclick="handleShutterAction()" id="mainShutterBtn" class="shutter-btn cursor-pointer">
-            <div id="shutterInnerCircle" class="shutter-inner bg-white"></div>
+          <div onclick="takeCameraSnap()" class="shutter-btn">
+            <div class="shutter-inner"></div>
           </div>
-          
-          <button type="button" onclick="switchCameraFacing()" class="w-10 h-10 rounded-full bg-surface neo-border-sm flex items-center justify-center text-xs active-press" title="Putar Kamera">
+          <button onclick="switchCameraFacing()" class="w-10 h-10 rounded-full bg-surface neo-border-sm flex items-center justify-center text-xs active-press" title="Putar Kamera">
             <span class="material-symbols-outlined text-sm">flip_camera_android</span>
           </button>
         </div>
 
-        <!-- Selected Badge Overlay on Media Preview -->
+        <!-- Selected Badge Overlay on Image Preview -->
         <div id="previewBadgeOverlay" class="absolute top-3 left-3 sticker-badge bg-secondary-container text-on-secondary-container text-xs px-2.5 py-1 hidden z-10">
           Cafe ☕
         </div>
