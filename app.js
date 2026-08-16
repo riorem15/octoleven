@@ -1422,7 +1422,6 @@ function triggerWidgetQuickReaction() {
   }
 }
 
-
 // --- PAP Capture & Upload Studio Modal ---
 function openPapModal() {
   currentCapturedImage = null;
@@ -1437,6 +1436,7 @@ function openPapModal() {
   const placeholder = document.getElementById('cameraPlaceholder');
   const controls = document.getElementById('activeCameraControls');
   const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const retakeOverlay = document.getElementById('retakePhotoOverlay');
   const captionInput = document.getElementById('papCaptionInput');
 
   if (imgPreview) imgPreview.classList.add('hidden');
@@ -1444,6 +1444,7 @@ function openPapModal() {
   if (placeholder) placeholder.classList.remove('hidden');
   if (controls) controls.classList.add('hidden');
   if (badgeOverlay) badgeOverlay.classList.add('hidden');
+  if (retakeOverlay) retakeOverlay.classList.add('hidden');
   if (captionInput) captionInput.value = '';
 
   updateStickerButtons();
@@ -1456,39 +1457,165 @@ function closePapModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+// Universal Camera Trigger (Native Capacitor Plugin -> Web getUserMedia -> Camera Input Fallback)
+async function takePapPhoto() {
+  // 1. Try Native Capacitor Camera Plugin (Android Native)
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) {
+    try {
+      const Camera = window.Capacitor.Plugins.Camera;
+      const photo = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: 'dataUrl',
+        source: 'CAMERA'
+      });
+
+      if (photo && photo.dataUrl) {
+        setCapturedPapImage(photo.dataUrl);
+        return;
+      }
+    } catch (capErr) {
+      console.warn('Native camera note:', capErr);
+      const errMsg = (capErr?.message || '').toLowerCase();
+      if (errMsg.includes('cancelled') || errMsg.includes('canceled') || errMsg.includes('user cancelled')) {
+        return;
+      }
+    }
+  }
+
+  // 2. Try In-Browser Web Live Camera (Viewfinder)
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      await startLiveCamera();
+      return;
+    } catch (liveErr) {
+      console.warn('Live getUserMedia unavailable:', liveErr);
+    }
+  }
+
+  // 3. Resilient Fallback: Native Device Camera Input
+  const nativeCamInput = document.getElementById('nativeCameraInput') || document.getElementById('filePickerInput');
+  if (nativeCamInput) {
+    nativeCamInput.click();
+  }
+}
+
+// Universal Gallery Trigger
+async function choosePapFromGallery() {
+  // 1. Try Native Capacitor Gallery
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) {
+    try {
+      const Camera = window.Capacitor.Plugins.Camera;
+      const photo = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: 'dataUrl',
+        source: 'PHOTOS'
+      });
+
+      if (photo && photo.dataUrl) {
+        setCapturedPapImage(photo.dataUrl);
+        return;
+      }
+    } catch (galErr) {
+      console.warn('Native gallery note:', galErr);
+      const errMsg = (galErr?.message || '').toLowerCase();
+      if (errMsg.includes('cancelled') || errMsg.includes('canceled') || errMsg.includes('user cancelled')) {
+        return;
+      }
+    }
+  }
+
+  // 2. Fallback: File Picker Input
+  const fileInput = document.getElementById('filePickerInput');
+  if (fileInput) fileInput.click();
+}
+
+function retakePapPhoto() {
+  currentCapturedImage = null;
+  currentMediaFile = null;
+
+  const placeholder = document.getElementById('cameraPlaceholder');
+  const imgPreview = document.getElementById('imagePreview');
+  const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const retakeOverlay = document.getElementById('retakePhotoOverlay');
+  const controls = document.getElementById('activeCameraControls');
+
+  if (placeholder) placeholder.classList.remove('hidden');
+  if (imgPreview) {
+    imgPreview.src = '';
+    imgPreview.classList.add('hidden');
+  }
+  if (badgeOverlay) badgeOverlay.classList.add('hidden');
+  if (retakeOverlay) retakeOverlay.classList.add('hidden');
+  if (controls) controls.classList.add('hidden');
+
+  stopLiveCamera();
+}
+
+function setCapturedPapImage(dataUrl) {
+  currentCapturedImage = dataUrl;
+  currentMediaFile = null;
+
+  stopLiveCamera();
+
+  const placeholder = document.getElementById('cameraPlaceholder');
+  const imgPreview = document.getElementById('imagePreview');
+  const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const retakeOverlay = document.getElementById('retakePhotoOverlay');
+  const controls = document.getElementById('activeCameraControls');
+
+  if (placeholder) placeholder.classList.add('hidden');
+  if (controls) controls.classList.add('hidden');
+
+  if (imgPreview) {
+    imgPreview.src = dataUrl;
+    imgPreview.classList.remove('hidden');
+  }
+
+  if (badgeOverlay) {
+    badgeOverlay.innerText = selectedSticker;
+    badgeOverlay.classList.remove('hidden');
+  }
+
+  if (retakeOverlay) {
+    retakeOverlay.classList.remove('hidden');
+  }
+
+  playSound('snap');
+  vibrate(40);
+  showToast('Foto PAP siap dikirim! 📸✨', 'check_circle');
+}
+
 async function startLiveCamera() {
   const videoEl = document.getElementById('cameraVideo');
   const imgPreview = document.getElementById('imagePreview');
   const placeholder = document.getElementById('cameraPlaceholder');
   const controls = document.getElementById('activeCameraControls');
   const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const retakeOverlay = document.getElementById('retakePhotoOverlay');
 
   if (imgPreview) imgPreview.classList.add('hidden');
   if (placeholder) placeholder.classList.add('hidden');
   if (badgeOverlay) badgeOverlay.classList.add('hidden');
+  if (retakeOverlay) retakeOverlay.classList.add('hidden');
 
-  try {
-    const constraints = {
-      video: {
-        facingMode: currentFacingMode,
-        width: { ideal: 1280 },
-        height: { ideal: 1280 }
-      },
-      audio: false
-    };
+  const constraints = {
+    video: {
+      facingMode: currentFacingMode,
+      width: { ideal: 1280 },
+      height: { ideal: 1280 }
+    },
+    audio: false
+  };
 
-    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-    if (videoEl) {
-      videoEl.srcObject = mediaStream;
-      videoEl.classList.remove('hidden');
-      videoEl.play();
-    }
-    if (controls) controls.classList.remove('hidden');
-  } catch (err) {
-    console.error('Kamera gagal dibuka:', err);
-    showToast('Gagal mengakses kamera: ' + err.message, 'error');
-    if (placeholder) placeholder.classList.remove('hidden');
+  mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+  if (videoEl) {
+    videoEl.srcObject = mediaStream;
+    videoEl.classList.remove('hidden');
+    videoEl.play();
   }
+  if (controls) controls.classList.remove('hidden');
 }
 
 function stopLiveCamera() {
@@ -1498,6 +1625,8 @@ function stopLiveCamera() {
   }
   const videoEl = document.getElementById('cameraVideo');
   if (videoEl) videoEl.classList.add('hidden');
+  const controls = document.getElementById('activeCameraControls');
+  if (controls) controls.classList.add('hidden');
 }
 
 function switchCameraFacing() {
@@ -1512,12 +1641,12 @@ function handleShutterAction() {
 
 function takeCameraSnap() {
   const videoEl = document.getElementById('cameraVideo');
-  const canvas = document.getElementById('captureCanvas');
-  const imgPreview = document.getElementById('imagePreview');
-  const controls = document.getElementById('activeCameraControls');
-  const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const canvas = document.getElementById('captureCanvas') || document.createElement('canvas');
 
-  if (!videoEl || !canvas) return;
+  if (!videoEl || videoEl.videoWidth === 0) {
+    showToast('Kamera sedang dimuat, tunggu sebentar...', 'warning');
+    return;
+  }
 
   canvas.width = videoEl.videoWidth || 1280;
   canvas.height = videoEl.videoHeight || 1280;
@@ -1530,22 +1659,8 @@ function takeCameraSnap() {
   
   ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
 
-  currentCapturedImage = canvas.toDataURL('image/jpeg', 0.92);
-  currentMediaFile = null;
-
-  playSound('snap');
-  vibrate(50);
-  stopLiveCamera();
-
-  if (imgPreview) {
-    imgPreview.src = currentCapturedImage;
-    imgPreview.classList.remove('hidden');
-  }
-  if (controls) controls.classList.add('hidden');
-  if (badgeOverlay) {
-    badgeOverlay.innerText = selectedSticker;
-    badgeOverlay.classList.remove('hidden');
-  }
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  setCapturedPapImage(dataUrl);
 }
 
 function handleFileSelected(event) {
@@ -1554,59 +1669,21 @@ function handleFileSelected(event) {
 
   currentMediaFile = file;
 
-  const imgPreview = document.getElementById('imagePreview');
-  const placeholder = document.getElementById('cameraPlaceholder');
-  const badgeOverlay = document.getElementById('previewBadgeOverlay');
-
-  stopLiveCamera();
-  if (placeholder) placeholder.classList.add('hidden');
-
   const reader = new FileReader();
   reader.onload = function(e) {
-    currentCapturedImage = e.target.result;
-    if (imgPreview) {
-      imgPreview.src = currentCapturedImage;
-      imgPreview.classList.remove('hidden');
-    }
-    if (badgeOverlay) {
-      badgeOverlay.innerText = selectedSticker;
-      badgeOverlay.classList.remove('hidden');
+    if (e.target?.result) {
+      setCapturedPapImage(e.target.result);
     }
   };
   reader.readAsDataURL(file);
-  showToast('Foto dipilih dari galeri! 📸', 'photo');
 
-  playSound('snap');
-  vibrate(30);
+  // Reset file input value so selecting the same photo again triggers change
+  event.target.value = '';
 }
 
 function pickSamplePhoto(index) {
-  currentPapMode = 'photo';
-  currentCapturedImage = SAMPLE_PRESET_PHOTOS[index] || SAMPLE_PRESET_PHOTOS[0];
-  currentMediaFile = null;
-  currentCapturedVideoBlob = null;
-  currentCapturedVideoUrl = null;
-
-  const imgPreview = document.getElementById('imagePreview');
-  const videoPreview = document.getElementById('videoPlaybackPreview');
-  const placeholder = document.getElementById('cameraPlaceholder');
-  const badgeOverlay = document.getElementById('previewBadgeOverlay');
-  const soundToggleBtn = document.getElementById('videoSoundToggleBtn');
-
-  stopLiveCamera();
-  if (videoPreview) videoPreview.classList.add('hidden');
-  if (soundToggleBtn) soundToggleBtn.classList.add('hidden');
-  if (placeholder) placeholder.classList.add('hidden');
-  if (imgPreview) {
-    imgPreview.src = currentCapturedImage;
-    imgPreview.classList.remove('hidden');
-  }
-  if (badgeOverlay) {
-    badgeOverlay.innerText = selectedSticker;
-    badgeOverlay.classList.remove('hidden');
-  }
-  playSound('snap');
-  vibrate(30);
+  const sampleUrl = SAMPLE_PRESET_PHOTOS[index] || SAMPLE_PRESET_PHOTOS[0];
+  setCapturedPapImage(sampleUrl);
 }
 
 function selectSticker(name) {
@@ -1615,8 +1692,10 @@ function selectSticker(name) {
 
   const badgeOverlay = document.getElementById('previewBadgeOverlay');
   if (badgeOverlay) {
-    const extraTag = currentPapMode === 'video' ? ' 🎥 10s' : '';
-    badgeOverlay.innerText = selectedSticker + extraTag;
+    badgeOverlay.innerText = selectedSticker;
+    if (currentCapturedImage) {
+      badgeOverlay.classList.remove('hidden');
+    }
   }
   vibrate(15);
 }
@@ -1631,86 +1710,51 @@ function updateStickerButtons() {
   });
 }
 
-// --- Submit New PAP (Photo or 10s Video) to Supabase Storage & Database ---
+// --- Submit New PAP Photo to Supabase Storage & Database ---
 async function submitNewPap() {
-  const isVideo = false;
-  
-  if (!isVideo && !currentCapturedImage && !currentMediaFile) {
-    showToast('Pilih atau rekam PAP terlebih dahulu!', 'warning');
+  if (!currentCapturedImage && !currentMediaFile) {
+    showToast('Ambil atau pilih foto PAP terlebih dahulu! 📸', 'warning');
     vibrate(60);
     return;
   }
 
   const captionInput = document.getElementById('papCaptionInput');
-  const caption = captionInput?.value.trim() || (isVideo ? 'Video 10 detik spesial buat kamu! 🎥❤️' : 'PAP hari ini buat kamu tersayang! ❤️');
+  const caption = captionInput?.value.trim() || 'PAP hari ini buat kamu tersayang! ❤️';
   const activeUser = coupleData.users[coupleData.activeUser] || { name: 'Pengguna' };
 
   closePapModal();
   playSound('heart');
   vibrate([40, 60, 40]);
-  showToast(isVideo ? 'Mengunggah video 10 detik... 🎥🚀' : 'Mengompres & mengunggah foto... 📸🚀', 'cloud_upload');
+  showToast('Mengompres & mengunggah foto... 📸🚀', 'cloud_upload');
 
-  let publicMediaUrl = '';
-  let publicThumbUrl = videoThumbnailUrl || currentCapturedImage || SAMPLE_PRESET_PHOTOS[0];
+  let publicThumbUrl = currentCapturedImage || SAMPLE_PRESET_PHOTOS[0];
 
   if (isSupabaseReady() && currentUser) {
     const supabase = getSupabase();
     try {
-      if (isVideo) {
-        const fileExt = currentCapturedVideoBlob?.type?.includes('mp4') ? 'mp4' : 'webm';
-        const fileName = `${coupleData.id}/video_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
-        // Upload video
-        const { error: videoErr } = await supabase.storage
+      let fileSource = currentMediaFile || currentCapturedImage;
+      let compressedResult = await compressImage(fileSource, 1280, 1280, 0.85);
+      publicThumbUrl = compressedResult.dataUrl || currentCapturedImage;
+
+      let fileToUpload = compressedResult.blob;
+      if (!fileToUpload && publicThumbUrl?.startsWith('data:')) {
+        fileToUpload = dataURItoBlob(publicThumbUrl);
+      }
+
+      if (fileToUpload) {
+        const fileExt = 'jpg';
+        const fileName = `${coupleData.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
           .from('pap-photos')
-          .upload(fileName, currentCapturedVideoBlob, {
-            contentType: currentCapturedVideoBlob.type || 'video/mp4',
-            upsert: true
-          });
+          .upload(fileName, fileToUpload, { contentType: 'image/jpeg', upsert: true });
 
-        if (!videoErr) {
-          const { data: pubData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
-          publicMediaUrl = pubData?.publicUrl || '';
-        }
-
-        // Upload thumbnail if available
-        if (videoThumbnailUrl) {
-          const thumbBlob = dataURItoBlob(videoThumbnailUrl);
-          const thumbName = `${coupleData.id}/thumb_${Date.now()}.jpg`;
-          const { error: thumbErr } = await supabase.storage
-            .from('pap-photos')
-            .upload(thumbName, thumbBlob, { contentType: 'image/jpeg', upsert: true });
-
-          if (!thumbErr) {
-            const { data: thumbPub } = supabase.storage.from('pap-photos').getPublicUrl(thumbName);
-            publicThumbUrl = thumbPub?.publicUrl || publicThumbUrl;
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
+          if (publicUrlData?.publicUrl) {
+            publicThumbUrl = publicUrlData.publicUrl;
           }
-        }
-      } else {
-        // Photo upload
-        let fileSource = currentMediaFile || currentCapturedImage;
-        let compressedResult = await compressImage(fileSource, 1280, 1280, 0.85);
-        publicThumbUrl = compressedResult.dataUrl || currentCapturedImage;
-
-        let fileToUpload = compressedResult.blob;
-        if (!fileToUpload && publicThumbUrl?.startsWith('data:')) {
-          fileToUpload = dataURItoBlob(publicThumbUrl);
-        }
-
-        if (fileToUpload) {
-          const fileExt = 'jpg';
-          const fileName = `${coupleData.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-          const { error: uploadError } = await supabase.storage
-            .from('pap-photos')
-            .upload(fileName, fileToUpload, { contentType: 'image/jpeg', upsert: true });
-
-          if (!uploadError) {
-            const { data: publicUrlData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
-            if (publicUrlData?.publicUrl) {
-              publicThumbUrl = publicUrlData.publicUrl;
-              publicMediaUrl = publicUrlData.publicUrl;
-            }
-          }
+        } else {
+          console.warn('Storage upload error:', uploadError);
         }
       }
 
@@ -1721,9 +1765,9 @@ async function submitNewPap() {
         sender_name: activeUser.name,
         sender_avatar: activeUser.avatar || '',
         photo_url: publicThumbUrl,
-        video_url: isVideo ? (publicMediaUrl || currentCapturedVideoUrl) : null,
-        is_video: isVideo,
-        sticker: selectedSticker + (isVideo ? ' 🎥' : ''),
+        video_url: null,
+        is_video: false,
+        sticker: selectedSticker,
         caption: caption,
         like_count: 1
       });
@@ -1731,23 +1775,19 @@ async function submitNewPap() {
       if (dbError) throw dbError;
 
       triggerConfetti();
-      showToast(isVideo ? 'PAP Video 10s terkirim! 🎥💖' : 'PAP Foto terkirim! 📸💖', 'check_circle');
-      
-      // Kirim Push Notification lengkap dengan preview
-      const notifTitle = isVideo ? 'PAP Video Baru Masuk! 🎥' : 'PAP Baru Masuk! 📸';
-      const notifBody = isVideo ? `${activeUser.name} mengirim video 10 detik manis untukmu, tonton sekarang!` : `${activeUser.name} ngirim PAP spesial nih, yuk intip!`;
+      showToast('PAP Foto terkirim! 📸💖', 'check_circle');
 
-      sendPushNotification(notifTitle, notifBody, { 
+      // Send Push Notification & Update Android Widgets
+      sendPushNotification('PAP Baru Masuk! 📸', `${activeUser.name} ngirim PAP spesial nih, yuk intip!`, {
         event: 'new_pap',
         widget_update: 'true',
         imageUrl: publicThumbUrl,
-        videoUrl: publicMediaUrl,
-        isVideo: isVideo ? 'true' : 'false',
+        isVideo: 'false',
         senderName: activeUser.name,
         caption: caption || '',
-        tagText: selectedSticker + (isVideo ? ' 🎥' : ' ✨')
+        tagText: selectedSticker + ' ✨'
       });
-      
+
       fetchMomentsFromSupabase();
       return;
     } catch (err) {

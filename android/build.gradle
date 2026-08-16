@@ -34,9 +34,16 @@ subprojects {
                 }
             }
         }
+        tasks.matching { it.name.contains("Kotlin") }.configureEach {
+            try {
+                kotlinOptions.jvmTarget = "17"
+            } catch (Exception ignored) {}
+        }
     }
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+
