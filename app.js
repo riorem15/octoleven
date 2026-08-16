@@ -987,9 +987,14 @@ function renderFeed(filter = 'all') {
               </div>
             </div>
           </div>
-          <span class="bg-surface-container px-2.5 py-1 rounded-full neo-border-sm font-label-bold text-[11px] text-primary font-bold">
-            ${moment.sticker || (isVideo ? 'Video 🎥' : 'PAP ✨')}
-          </span>
+          <div class="flex items-center gap-1.5">
+            <button onclick="downloadPapImage('${moment.image}', '${encodeURIComponent(moment.caption || 'pap')}')" class="w-7 h-7 rounded-full bg-surface-container neo-border-sm flex items-center justify-center text-on-surface hover:bg-secondary-container active-press shadow-sm transition-colors" title="Download Foto PAP">
+              <span class="material-symbols-outlined text-sm">download</span>
+            </button>
+            <span class="bg-surface-container px-2.5 py-1 rounded-full neo-border-sm font-label-bold text-[11px] text-primary font-bold">
+              ${moment.sticker || (isVideo ? 'Video 🎥' : 'PAP ✨')}
+            </span>
+          </div>
         </div>
 
         <div class="w-full rounded-xl neo-border overflow-hidden bg-surface-dim relative group aspect-[4/3]">
@@ -1047,6 +1052,63 @@ function renderFeed(filter = 'all') {
       </article>
     `;
   }).join('');
+}
+
+// --- Download PAP Image to Device Gallery ---
+async function downloadPapImage(imageUrl, rawCaption = 'pap') {
+  if (!imageUrl) {
+    showToast('Foto tidak tersedia untuk diunduh.', 'warning');
+    return;
+  }
+
+  showToast('Menyimpan foto ke perangkat... 📥', 'info');
+  vibrate(25);
+
+  try {
+    const cleanCaption = decodeURIComponent(rawCaption).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20) || 'pap';
+    const filename = `octoleven_${cleanCaption}_${Date.now()}.jpg`;
+
+    // Handle base64 / data URL directly
+    if (imageUrl.startsWith('data:')) {
+      const a = document.createElement('a');
+      a.href = imageUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Foto PAP berhasil diunduh! 📥💖', 'check_circle');
+      playSound('snap');
+      return;
+    }
+
+    // Handle remote URL (fetch blob to trigger direct file download on Android/Browser)
+    const response = await fetch(imageUrl, { mode: 'cors' });
+    if (!response.ok) throw new Error('Fetch failed');
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    showToast('Foto PAP berhasil disimpan! 📥💖', 'check_circle');
+    playSound('snap');
+  } catch (err) {
+    console.warn('Direct blob download notice:', err);
+    // Fallback: open image in browser tab or trigger standard download
+    const a = document.createElement('a');
+    a.href = imageUrl;
+    a.target = '_blank';
+    a.download = `octoleven_pap_${Date.now()}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('Foto dibuka di galeri unduhan! 📥✨', 'check_circle');
+  }
 }
 
 // --- Feed Reaction Handler ---

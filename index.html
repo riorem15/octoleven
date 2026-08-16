@@ -1000,20 +1000,20 @@
         </div>
 
         <div class="flex flex-col items-center gap-2.5">
-          <div class="relative group cursor-pointer" onclick="document.getElementById('profileAvatarFileInput').click()">
+          <label for="profileAvatarFileInput" class="relative group cursor-pointer active-press">
             <div class="w-20 h-20 rounded-full overflow-hidden neo-border bg-primary-container shadow-sm">
               <img id="profileEditAvatarPreview" class="w-full h-full object-cover" src="" alt="Avatar"/>
             </div>
             <div class="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-container text-white rounded-full neo-border-sm flex items-center justify-center shadow-sm">
               <span class="material-symbols-outlined text-sm">photo_camera</span>
             </div>
-          </div>
+          </label>
           
-          <button type="button" onclick="document.getElementById('profileAvatarFileInput').click()" class="px-3.5 py-1.5 bg-secondary-container text-on-secondary-container rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1.5 active-press hover:bg-secondary-container/80 transition-colors">
+          <label for="profileAvatarFileInput" class="px-3.5 py-2 bg-secondary-container text-on-secondary-container rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1.5 active-press cursor-pointer hover:bg-secondary-container/80 transition-colors shadow-sm">
             <span class="material-symbols-outlined text-sm">photo_library</span>
             <span>Ganti Foto dari Galeri</span>
-          </button>
-          <input type="file" id="profileAvatarFileInput" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,.jpg,.jpeg,.png,.webp,image/*" class="hidden" onchange="handleProfileAvatarSelected(event)"/>
+            <input type="file" id="profileAvatarFileInput" accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp" class="hidden" onchange="handleProfileAvatarSelected(event)"/>
+          </label>
 
           <span class="text-[11px] text-on-surface-variant font-medium mt-1">Atau pilih avatar karakter:</span>
           
