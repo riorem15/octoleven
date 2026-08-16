@@ -23,14 +23,33 @@ module.exports = async (req, res) => {
   if (!token) return res.status(400).json({ success: false, message: 'Token required' });
 
   try {
+    const payloadData = {};
+    if (data && typeof data === 'object') {
+      for (const [key, val] of Object.entries(data)) {
+        payloadData[key] = String(val ?? '');
+      }
+    }
+    if (title) payloadData.title = String(title);
+    if (body) payloadData.body = String(body);
+
     const message = {
       token: token,
-      data: data || {},
+      data: payloadData,
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'octo_couple_channel',
+          sound: 'default',
+          priority: 'max',
+          defaultVibrateTimings: true,
+          defaultSound: true,
+        },
+      },
     };
     
-    // Jika title dan body ada, tambahkan sebagai push notification UI standar
+    // Jika title dan body ada, tambahkan juga sebagai push notification UI standar
     if (title || body) {
-      message.notification = { title, body };
+      message.notification = { title: String(title || ''), body: String(body || '') };
     }
     
     const response = await admin.messaging().send(message);

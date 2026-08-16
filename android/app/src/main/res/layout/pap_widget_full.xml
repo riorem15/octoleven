@@ -9,26 +9,67 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
-        android:contentDescription="PAP Image" />
+        android:contentDescription="PAP Full Frame" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_gravity="top"
-        android:background="#44000000" />
-
+    <!-- Top Badge -->
     <TextView
-        android:id="@+id/widget_text"
+        android:id="@+id/widget_tag"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="12dp"
-        android:textColor="#FFFFFF"
+        android:layout_gravity="top|start"
+        android:layout_margin="8dp"
+        android:background="@drawable/badge_yellow"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="3dp"
+        android:textColor="#25181A"
+        android:textSize="10sp"
         android:textStyle="bold"
-        android:textSize="16sp"
-        android:shadowColor="#88000000"
-        android:shadowDx="1"
-        android:shadowDy="1"
-        android:shadowRadius="3"
-        android:text="PAP Hari Ini ✨" />
+        android:text="PAP Spesial ✨" />
+
+    <!-- Bottom Dark Gradient Info Panel -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#AA000000"
+        android:orientation="vertical"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/widget_sender_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="#FED74C"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:text="Pasangan ❤️" />
+
+            <TextView
+                android:id="@+id/widget_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#DDDDDD"
+                android:textSize="9sp"
+                android:text="Baru saja" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="PAP hari ini buat kamu tersayang! ❤️" />
+    </LinearLayout>
+
 </FrameLayout>

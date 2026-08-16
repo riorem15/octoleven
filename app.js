@@ -48,6 +48,54 @@ function makeInviteCode() {
   return code;
 }
 
+// --- Client-Side Smart Image Compressor ---
+async function compressImage(source, maxWidth = 1280, maxHeight = 1280, quality = 0.85) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth || height > maxHeight) {
+        if (width > height) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve({ blob, dataUrl: compressedDataUrl });
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => {
+      resolve({ blob: null, dataUrl: typeof source === 'string' ? source : null });
+    };
+
+    if (typeof source === 'string') {
+      img.src = source;
+    } else if (source instanceof Blob || source instanceof File) {
+      img.src = URL.createObjectURL(source);
+    } else {
+      resolve({ blob: null, dataUrl: null });
+    }
+  });
+}
+
 // Convert Base64 Data URL to Blob for Supabase Storage
 function dataURItoBlob(dataURI) {
   const byteString = atob(dataURI.split(',')[1]);
@@ -58,6 +106,46 @@ function dataURItoBlob(dataURI) {
     ia[i] = byteString.charCodeAt(i);
   }
   return new Blob([ab], { type: mimeString });
+}
+
+// --- Fun & Cute Animation Helpers ---
+function triggerConfetti() {
+  const colors = ['#ff6b8a', '#fed74c', '#4ea5d9', '#ad2c4e', '#00658f', '#ffffff'];
+  for (let i = 0; i < 35; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = `${Math.random() * 100}vw`;
+    piece.style.top = `${window.scrollY + Math.random() * 100}px`;
+    piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = `${Math.random() * 8 + 6}px`;
+    piece.style.height = `${Math.random() * 12 + 6}px`;
+    piece.style.animationDuration = `${Math.random() * 1.2 + 1.2}s`;
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 2500);
+  }
+}
+
+function spawnFloatingEmoji(emoji, x, y) {
+  const floater = document.createElement('div');
+  floater.className = 'floating-particle';
+  floater.innerText = emoji;
+  floater.style.left = `${x || window.innerWidth / 2}px`;
+  floater.style.top = `${y || window.innerHeight / 2}px`;
+  floater.style.setProperty('--drift-x', `${(Math.random() - 0.5) * 80}px`);
+  floater.style.setProperty('--rot', `${(Math.random() - 0.5) * 40}deg`);
+  document.body.appendChild(floater);
+  setTimeout(() => floater.remove(), 1300);
+}
+
+function triggerHeartBurst(x, y) {
+  const emojis = ['❤️', '💖', '🥰', '✨', '🥺'];
+  for (let i = 0; i < 6; i++) {
+    setTimeout(() => {
+      const offsetX = (Math.random() - 0.5) * 60;
+      const offsetY = (Math.random() - 0.5) * 40;
+      spawnFloatingEmoji(emojis[i % emojis.length], (x || window.innerWidth / 2) + offsetX, (y || window.innerHeight / 2) + offsetY);
+    }, i * 70);
+  }
 }
 
 // --- Supabase Workspace Hydration ---
@@ -202,6 +290,7 @@ async function fetchMomentsFromSupabase() {
         text: c.text
       }));
 
+      const isVideo = p.is_video || (p.video_url ? true : false) || (p.sticker && p.sticker.includes('🎥'));
       return {
         id: p.id,
         coupleId: p.couple_id,
@@ -209,6 +298,8 @@ async function fetchMomentsFromSupabase() {
         senderName: p.sender_name,
         senderAvatar: p.sender_avatar,
         image: p.photo_url,
+        videoUrl: p.video_url || null,
+        isVideo: isVideo,
         caption: p.caption,
         sticker: p.sticker,
         timestamp: p.created_at,
@@ -248,29 +339,103 @@ function initSupabaseRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => {
       fetchMomentsFromSupabase();
     })
+    .on('broadcast', { event: 'new_pap' }, (payload) => {
+      const data = payload?.payload || {};
+      if (data.senderId !== currentUser?.id) {
+        showToast(`${data.senderName || 'Pasangan'} baru saja mengirim PAP! 📸`, 'add_a_photo');
+        playSound('camera');
+        vibrate([100, 50, 100]);
+        triggerLocalNotification('PAP Baru Masuk! 📸', `${data.senderName || 'Pasangan'} baru saja mengirim PAP spesial untukmu!`, data.imageUrl);
+        fetchMomentsFromSupabase();
+      }
+    })
     .on('broadcast', { event: 'love_poke' }, (payload) => {
-      if (payload.payload.senderId !== currentUser.id) {
-        showToast(`${payload.payload.senderName} lagi kangen kamu! 🥺`, 'favorite');
+      const data = payload?.payload || {};
+      if (data.senderId !== currentUser?.id) {
+        showToast(`${data.senderName || 'Pasangan'} lagi kangen banget sama kamu! 🥺❤️`, 'favorite');
         playSound('heart');
         vibrate([50, 100, 50, 100, 50]);
         spawnFloatingEmoji('❤️', window.innerWidth / 2, 100);
-        
-        // Coba trigger Local Notification jika app terbuka/di background sementara
-        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
-            window.Capacitor.Plugins.LocalNotifications.schedule({
-                notifications: [{
-                    title: 'Panggilan Rindu! 🥺',
-                    body: `${payload.payload.senderName} lagi kangen banget sama kamu!`,
-                    id: Math.floor(Math.random() * 100000),
-                    schedule: { at: new Date(Date.now() + 1000) }
-                }]
-            });
-        }
+        triggerLocalNotification('Panggilan Rindu! 🥺❤️', `${data.senderName || 'Pasangan'} lagi kangen banget sama kamu!`);
+      }
+    })
+    .on('broadcast', { event: 'reaction' }, (payload) => {
+      const data = payload?.payload || {};
+      if (data.senderId !== currentUser?.id) {
+        showToast(`${data.senderName || 'Pasangan'} bereaksi ${data.emoji || '❤️'} pada PAP kamu!`, 'favorite');
+        playSound('pop');
+        vibrate(40);
+        triggerLocalNotification('Reaksi Baru! ❤️', `${data.senderName || 'Pasangan'} bereaksi pada foto kamu!`);
+        fetchMomentsFromSupabase();
+      }
+    })
+    .on('broadcast', { event: 'comment' }, (payload) => {
+      const data = payload?.payload || {};
+      if (data.senderId !== currentUser?.id) {
+        showToast(`Komentar baru dari ${data.senderName || 'Pasangan'}: "${data.commentText || ''}"`, 'chat_bubble');
+        playSound('toast');
+        vibrate(40);
+        triggerLocalNotification('Komentar Baru! 💬', `${data.senderName || 'Pasangan'}: ${data.commentText || 'mengomentari fotomu'}`);
+        fetchMomentsFromSupabase();
+      }
+    })
+    .on('broadcast', { event: 'mood' }, (payload) => {
+      const data = payload?.payload || {};
+      if (data.senderId !== currentUser?.id) {
+        showToast(`Status mood ${data.senderName || 'Pasangan'} diperbarui: ${data.emoji || '🥰'} ${data.moodText || ''}`, 'sentiment_satisfied');
+        vibrate(30);
+        triggerLocalNotification('Status Mood Pasangan ✨', `${data.senderName || 'Pasangan'} sekarang lagi ${data.emoji || '🥰'} ${data.moodText || ''}`);
+        updateUIForActiveUser();
+      }
+    })
+    .on('broadcast', { event: 'agenda' }, (payload) => {
+      const data = payload?.payload || {};
+      if (data.senderId !== currentUser?.id) {
+        showToast(`Agenda baru: "${data.title || ''}" oleh ${data.senderName || 'Pasangan'} 📅`, 'calendar_month');
+        playSound('toast');
+        vibrate([50, 100, 50]);
+        triggerLocalNotification('Agenda Baru Pasangan! 📅', `${data.senderName || 'Pasangan'} menambahkan agenda: ${data.title || ''}`);
+        updateUIForActiveUser();
       }
     })
     .subscribe();
 
   fetchMomentsFromSupabase();
+}
+
+// Helper to trigger Local Device Notification
+async function triggerLocalNotification(title, body, imageUrl = null) {
+  // 1. Capacitor Local Notifications (Android Native)
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+    try {
+      const notifObj = {
+        title: title,
+        body: body,
+        id: Math.floor(Math.random() * 1000000),
+        schedule: { at: new Date(Date.now() + 500) }
+      };
+      if (imageUrl) {
+        notifObj.largeBody = body;
+        notifObj.summaryText = 'Octoleven Couple PAP';
+      }
+      await window.Capacitor.Plugins.LocalNotifications.schedule({
+        notifications: [notifObj]
+      });
+    } catch (e) {
+      console.warn('LocalNotifications schedule error:', e);
+    }
+  }
+
+  // 2. Web Browser Notification
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        body: body,
+        icon: 'icon-192.png',
+        badge: 'favicon.png'
+      });
+    } catch (e) {}
+  }
 }
 
 async function handleAuthSession(session) {
@@ -292,6 +457,8 @@ async function handleAuthSession(session) {
 
     await ensureWorkspaceForUser(currentUser);
     initSupabaseRealtime();
+    updateUIForActiveUser();
+    checkFlameReminderOnAppOpen();
     
     // --- Initialize Push Notifications ---
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
@@ -646,6 +813,7 @@ function updateUIForActiveUser() {
   if (headerAvatar) headerAvatar.src = finalActiveAvatar;
   if (activeUserLabel) activeUserLabel.innerText = coupleTitle;
 
+  // Tab Kita Profile Cards (Gambar 2 Layout)
   const coupleAvatar1 = document.getElementById('coupleAvatar1');
   const coupleName1 = document.getElementById('coupleName1');
   const coupleAvatar2 = document.getElementById('coupleAvatar2');
@@ -661,10 +829,23 @@ function updateUIForActiveUser() {
     homeGreeting.innerText = `Hai ${activeUser.name}, kangen ya? ❤️`;
   }
 
+  // Days Together & Tanggal Jadian
+  const days = calculateDaysTogether();
   const daysTogetherText = document.getElementById('daysTogetherText');
   if (daysTogetherText) {
-    const days = calculateDaysTogether();
     daysTogetherText.innerText = `${coupleTitle} • ${days} hari bersama`;
+  }
+
+  const daysTogetherCount = document.getElementById('daysTogetherCount');
+  if (daysTogetherCount) {
+    daysTogetherCount.innerText = `${days} Hari`;
+  }
+
+  const anniversaryFormattedDate = document.getElementById('anniversaryFormattedDate');
+  if (anniversaryFormattedDate) {
+    const startDate = new Date(coupleData.relationshipStartDate || new Date().toISOString());
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    anniversaryFormattedDate.innerText = startDate.toLocaleDateString('id-ID', options);
   }
 
   const heroPapStatus = document.getElementById('heroPapStatus');
@@ -681,8 +862,18 @@ function updateUIForActiveUser() {
     if (partnerMoodLabel) partnerMoodLabel.innerText = `Status ${partnerName}`;
   }
 
+  // Total PAP count stats
   const statTotalPap = document.getElementById('statTotalPap');
   if (statTotalPap) statTotalPap.innerText = moments.length;
+  
+  const statTotalPapCount = document.getElementById('statTotalPapCount');
+  if (statTotalPapCount) statTotalPapCount.innerText = moments.length;
+
+  // Update Flame Streak UI
+  updateStreakUI();
+
+  // Check Anniversary Notification
+  checkAnniversaryNotification();
 
   // Update Agenda UI
   const latestAgendaUser = (activeUser.nextDateTime && partnerUser.nextDateTime) 
@@ -719,11 +910,17 @@ function renderHomeView() {
     const rot = rotations[idx % rotations.length];
     const senderName = m.senderName || 'Pasangan';
     const heartCount = m.reactions?.['❤️'] || 0;
+    const isVideo = m.isVideo || m.is_video || m.videoUrl || m.video_url;
 
     return `
       <div onclick="switchTab('feed')" class="w-32 h-44 shrink-0 bg-surface neo-border-sm rounded-xl p-2 snap-center relative transform ${rot} polaroid-card cursor-pointer flex flex-col justify-between">
-        <div class="w-full h-28 bg-surface-variant rounded-lg flex items-center justify-center overflow-hidden neo-border-sm">
-          <img src="${m.image}" alt="PAP thumbnail" class="w-full h-full object-cover"/>
+        <div class="w-full h-28 bg-surface-variant rounded-lg flex items-center justify-center overflow-hidden neo-border-sm relative">
+          ${isVideo ? `
+            <video src="${m.videoUrl || m.video_url || m.image}" autoplay loop muted playsinline class="w-full h-full object-cover pointer-events-none"></video>
+            <span class="absolute top-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded neo-border-sm">🎥 10s</span>
+          ` : `
+            <img src="${m.image}" alt="PAP thumbnail" class="w-full h-full object-cover"/>
+          `}
         </div>
         <div class="flex justify-between items-center mt-1">
           <span class="text-[10px] font-bold text-on-surface-variant line-clamp-1">${senderName}</span>
@@ -732,11 +929,22 @@ function renderHomeView() {
           </span>
         </div>
         <span class="absolute -bottom-2 -right-1 bg-secondary-container text-on-secondary-container font-caption text-[10px] font-bold px-2 py-0.5 rounded-full neo-border-sm shadow-sm">
-          ${m.sticker || 'PAP 📸'}
+          ${m.sticker || (isVideo ? 'Video 🎥' : 'PAP 📸')}
         </span>
       </div>
     `;
   }).join('');
+}
+
+// Helper to toggle sound on feed video cards
+function toggleFeedVideoSound(videoEl, btnEl) {
+  if (!videoEl) return;
+  videoEl.muted = !videoEl.muted;
+  const icon = btnEl?.querySelector('.material-symbols-outlined') || btnEl;
+  if (icon) {
+    icon.innerText = videoEl.muted ? 'volume_off' : 'volume_up';
+  }
+  vibrate(20);
 }
 
 // --- Render Private Feed Tab ---
@@ -763,9 +971,9 @@ function renderFeed(filter = 'all') {
       <div class="bg-surface-container neo-border rounded-xl p-8 text-center space-y-3 neo-shadow-sm">
         <span class="text-4xl">📸</span>
         <h4 class="font-bold text-base">Belum Ada Momen PAP</h4>
-        <p class="text-xs text-on-surface-variant">Kirimkan PAP pertama kamu untuk memenuhi lembaran memori privat ini!</p>
+        <p class="text-xs text-on-surface-variant">Kirimkan PAP foto atau video 10 detik pertama kamu untuk pacar tersayang!</p>
         <button onclick="openPapModal()" class="px-4 py-2 bg-primary-container text-white rounded-xl neo-border-sm text-xs font-bold neo-shadow-sm active-press">
-          + Ambil PAP Sekarang
+          + Kirim PAP Foto / Video
         </button>
       </div>
     `;
@@ -777,6 +985,7 @@ function renderFeed(filter = 'all') {
     const cardBg = index % 2 === 0 ? 'bg-surface-container-highest' : 'bg-surface';
     const tilt = index % 3 === 1 ? '-rotate-1 hover:rotate-0' : (index % 3 === 2 ? 'rotate-1 hover:rotate-0' : '');
     const reactions = moment.reactions || { '❤️': 1, '🥹': 0, '😂': 0, '🔥': 0 };
+    const isVideo = moment.isVideo || moment.is_video || moment.videoUrl || moment.video_url;
 
     return `
       <article class="${cardBg} rounded-2xl neo-border neo-shadow p-4 flex flex-col gap-3 relative transition-transform duration-200 ${tilt}">
@@ -795,12 +1004,24 @@ function renderFeed(filter = 'all') {
             </div>
           </div>
           <span class="bg-surface-container px-2.5 py-1 rounded-full neo-border-sm font-label-bold text-[11px] text-primary font-bold">
-            ${moment.sticker || 'PAP ✨'}
+            ${moment.sticker || (isVideo ? 'Video 🎥' : 'PAP ✨')}
           </span>
         </div>
 
         <div class="w-full rounded-xl neo-border overflow-hidden bg-surface-dim relative group aspect-[4/3]">
-          <img src="${moment.image}" alt="PAP Photo" class="w-full h-full object-cover"/>
+          ${isVideo ? `
+            <video src="${moment.videoUrl || moment.video_url || moment.image}" autoplay loop muted playsinline class="w-full h-full object-cover"></video>
+            <div class="absolute top-2.5 right-2.5 flex gap-1.5 items-center z-10">
+              <span class="bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full neo-border-sm flex items-center gap-1 shadow">
+                <span>🎥</span> 10s
+              </span>
+              <button onclick="toggleFeedVideoSound(this.parentElement.previousElementSibling, this)" class="w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center text-xs neo-border-sm shadow" title="Suara">
+                <span class="material-symbols-outlined text-xs">volume_off</span>
+              </button>
+            </div>
+          ` : `
+            <img src="${moment.image}" alt="PAP Photo" class="w-full h-full object-cover"/>
+          `}
         </div>
 
         <p class="font-body-md text-sm text-on-background leading-relaxed font-medium">
@@ -930,6 +1151,8 @@ async function submitFeedComment(momentId) {
   renderFeed(currentFilter);
 }
 
+let selectedWidgetCategory = 'all'; // 'all', 'partner', 'me'
+
 // --- Simulated Android Widget Sync ---
 function updateSimulatedWidget() {
   const dynamicContainer = document.getElementById('widgetDynamicContent');
@@ -942,13 +1165,28 @@ function updateSimulatedWidget() {
 
   if (!dynamicContainer) return;
 
-  if (moments.length === 0) {
-    dynamicContainer.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xs text-on-surface-variant font-bold p-5 text-center">Belum ada PAP. Ayo kirim PAP pertamamu!</div>`;
+  // Filter moments based on selected widget category
+  let displayMoments = moments;
+  const activeUser = coupleData.users[coupleData.activeUser] || { id: currentUser?.id, name: 'Kamu' };
+  const partnerUser = Object.values(coupleData.users).find((user) => user.id !== activeUser.id);
+
+  if (selectedWidgetCategory === 'partner' && partnerUser) {
+    displayMoments = moments.filter(m => m.senderId === partnerUser.id || (m.senderName && !m.senderName.toLowerCase().includes('kamu')));
+  } else if (selectedWidgetCategory === 'me') {
+    displayMoments = moments.filter(m => m.senderId === activeUser.id || (m.senderName && m.senderName.toLowerCase().includes('kamu')));
+  }
+
+  if (displayMoments.length === 0) {
+    displayMoments = moments; // Fallback to all if category empty
+  }
+
+  if (displayMoments.length === 0) {
+    dynamicContainer.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xs text-on-surface-variant font-bold p-5 text-center">Belum ada PAP untuk kategori ini. Ayo kirim PAP!</div>`;
     return;
   }
-  const latestMoment = moments[0];
-
+  const latestMoment = displayMoments[0];
   const senderName = latestMoment.senderName || 'Pasangan';
+  const daysTogether = calculateDaysTogether() + ' Hari';
 
   if (widgetSize === 'landscape') {
     dynamicContainer.innerHTML = `
@@ -984,43 +1222,91 @@ function updateSimulatedWidget() {
         </div>
       </div>
     `;
-  } else if (widgetSize === 'medium') {
+  } else if (widgetSize === 'full') {
     dynamicContainer.innerHTML = `
-      <div class="space-y-1.5 w-full">
-        <div class="flex justify-between items-center mb-1">
-          <div class="flex items-center gap-1">
-            <div class="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-[8px] text-white">❤️</div>
-            <span class="font-label-bold text-[11px] font-bold text-primary">Octoleven PAP</span>
+      <div class="relative rounded-xl overflow-hidden neo-border-sm bg-surface-dim aspect-[16/9] w-full">
+        <img src="${latestMoment.image}" alt="PAP Widget Full" class="w-full h-full object-cover"/>
+        <div class="absolute top-2 left-2">
+          <span class="bg-secondary-container text-on-secondary-container text-[9px] font-extrabold px-2 py-0.5 rounded neo-border-sm shadow-sm">
+            ${latestMoment.sticker || 'PAP Spesial ✨'}
+          </span>
+        </div>
+        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 text-white flex flex-col justify-end">
+          <div class="flex justify-between items-center text-[10px] font-bold text-[#fed74c]">
+            <span>${senderName} ❤️</span>
+            <span class="text-[9px] text-white/80 font-normal">${formatTimeAgo(latestMoment.timestamp)}</span>
           </div>
-          <span class="text-[9px] font-bold bg-secondary-container px-2 py-0.5 rounded-full neo-border-sm text-on-secondary-container">
-            ${formatTimeAgo(latestMoment.timestamp)}
-          </span>
-        </div>
-        <div class="relative rounded-xl overflow-hidden neo-border-sm bg-surface-dim aspect-[16/9]">
-          <img src="${latestMoment.image}" alt="PAP Widget" class="w-full h-full object-cover"/>
-          <span class="absolute bottom-1.5 left-1.5 bg-primary-container text-white text-[10px] font-bold px-2 py-0.5 rounded neo-border-sm">
-            Dari ${senderName}
-          </span>
-        </div>
-        <div class="flex justify-between items-center gap-2 pt-0.5">
-          <p class="text-[11px] font-bold text-on-background line-clamp-1 flex-1">"${latestMoment.caption}"</p>
-          <button onclick="event.stopPropagation(); triggerWidgetQuickReaction()" class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center neo-border-sm active-press text-[10px]" title="Kirim Reaksi">❤️</button>
+          <p class="text-xs font-bold line-clamp-1 mt-0.5">"${latestMoment.caption}"</p>
         </div>
       </div>
     `;
-  } else if (widgetSize === 'small') {
+  } else if (widgetSize === 'square') {
     dynamicContainer.innerHTML = `
       <div class="space-y-1 max-w-[170px] mx-auto">
         <div class="relative rounded-xl overflow-hidden neo-border-sm bg-surface-dim aspect-square">
-          <img src="${latestMoment.image}" alt="PAP Widget" class="w-full h-full object-cover"/>
-          <span class="absolute top-1 right-1 bg-secondary-container text-on-secondary-container text-[8px] font-bold px-1.5 py-0.5 rounded neo-border-sm">
-            ${formatTimeAgo(latestMoment.timestamp)}
+          <img src="${latestMoment.image}" alt="PAP Widget Square" class="w-full h-full object-cover"/>
+          <span class="absolute top-1.5 left-1.5 bg-primary-container text-white text-[8px] font-bold px-1.5 py-0.5 rounded neo-border-sm shadow-sm">
+            ${latestMoment.sticker || 'PAP ✨'}
           </span>
-          <span class="absolute bottom-1 left-1 bg-primary-container text-white text-[9px] font-bold px-1.5 py-0.5 rounded neo-border-sm">
-            ${senderName}
+          <div class="absolute inset-x-0 bottom-0 bg-black/70 p-1.5 text-white">
+            <span class="text-[9px] font-bold text-[#fed74c] block">${senderName} ❤️</span>
+            <p class="text-[9px] line-clamp-1 leading-tight text-white/90">"${latestMoment.caption}"</p>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (widgetSize === 'polaroid') {
+    dynamicContainer.innerHTML = `
+      <div class="max-w-[190px] mx-auto bg-white p-2.5 rounded-xl neo-border-sm shadow-md flex flex-col items-center gap-1.5 transform rotate-[-1deg]">
+        <div class="relative rounded-lg overflow-hidden neo-border-sm bg-gray-100 aspect-square w-full">
+          <img src="${latestMoment.image}" alt="PAP Polaroid" class="w-full h-full object-cover"/>
+          <span class="absolute top-1.5 left-1.5 bg-secondary-container text-on-secondary-container text-[8px] font-bold px-1.5 py-0.5 rounded neo-border-sm">
+            ${latestMoment.sticker || 'Manis ✨'}
           </span>
         </div>
-        <p class="text-[10px] font-bold text-on-background line-clamp-1 text-center">"${latestMoment.caption}"</p>
+        <div class="text-center w-full pt-1">
+          <p class="text-[11px] font-bold italic text-on-background line-clamp-1">"${latestMoment.caption}"</p>
+          <span class="text-[9px] font-bold text-primary block mt-0.5">${senderName} • ${formatTimeAgo(latestMoment.timestamp)}</span>
+        </div>
+      </div>
+    `;
+  } else if (widgetSize === 'kangen') {
+    dynamicContainer.innerHTML = `
+      <div class="max-w-[190px] mx-auto bg-surface p-2.5 rounded-2xl neo-border-sm space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5">
+            <img src="${latestMoment.image}" alt="Avatar" class="w-7 h-7 rounded-full object-cover neo-border-sm"/>
+            <div>
+              <span class="text-[10px] font-bold text-on-background block leading-tight">${senderName}</span>
+              <span class="text-[8px] text-on-surface-variant">${formatTimeAgo(latestMoment.timestamp)}</span>
+            </div>
+          </div>
+          <span class="text-base animate-bounce">🥰</span>
+        </div>
+        <div class="bg-primary/10 rounded-xl p-2 text-center neo-border-sm">
+          <span class="text-[9px] font-bold text-primary uppercase block">Panggilan Rindu</span>
+          <span class="text-base font-extrabold text-primary">❤️ Kangen Banget!</span>
+        </div>
+        <button onclick="event.stopPropagation(); sendLovePoke()" class="w-full py-1.5 bg-primary-container text-white rounded-lg neo-border-sm text-[10px] font-bold active-press flex items-center justify-center gap-1">
+          <span>🥺</span> Balas Rindu
+        </button>
+      </div>
+    `;
+  } else if (widgetSize === 'countdown') {
+    dynamicContainer.innerHTML = `
+      <div class="flex items-stretch gap-2.5 w-full bg-surface p-2 rounded-2xl neo-border-sm">
+        <div class="w-[45%] aspect-square rounded-xl overflow-hidden neo-border-sm bg-surface-dim relative shrink-0">
+          <img src="${latestMoment.image}" alt="Couple" class="w-full h-full object-cover"/>
+          <span class="absolute top-1 left-1 bg-secondary-container text-on-secondary-container text-[8px] font-bold px-1.5 py-0.5 rounded neo-border-sm">
+            Together 💕
+          </span>
+        </div>
+        <div class="w-[55%] flex flex-col justify-center py-1">
+          <span class="text-[10px] font-bold text-primary">Kisah Cinta Kita ❤️</span>
+          <span class="text-xl font-black text-on-background leading-tight">${daysTogether}</span>
+          <p class="text-[10px] font-semibold text-on-surface-variant line-clamp-1 mt-1">"${latestMoment.caption}"</p>
+          <span class="text-[9px] font-bold text-secondary mt-1">✨ Buka Octoleven</span>
+        </div>
       </div>
     `;
   }
@@ -1028,17 +1314,14 @@ function updateSimulatedWidget() {
   // --- NATIVE ANDROID WIDGET SYNC ---
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.WidgetPlugin) {
     if (latestMoment && latestMoment.image) {
-      let senderType = "all";
-      if (latestMoment.senderName && latestMoment.senderName.toLowerCase().includes("rio")) senderType = "rio";
-      if (latestMoment.senderName && latestMoment.senderName.toLowerCase().includes("nindya")) senderType = "nindya";
-
       window.Capacitor.Plugins.WidgetPlugin.updateWidget({ 
         imageUrl: latestMoment.image, 
-        sender: senderType,
+        sender: selectedWidgetCategory,
         senderName: senderName,
         caption: latestMoment.caption || '',
         timeText: formatTimeAgo(latestMoment.timestamp),
-        tagText: latestMoment.sticker || 'PAP ✨'
+        tagText: latestMoment.sticker || 'PAP ✨',
+        daysCount: daysTogether
       })
         .then(() => console.log('Native Android Widget updated successfully!'))
         .catch(err => console.error('Failed to update Native Widget:', err));
@@ -1046,22 +1329,70 @@ function updateSimulatedWidget() {
   }
 }
 
+function setWidgetCategory(cat) {
+  selectedWidgetCategory = cat;
+  
+  const btnAll = document.getElementById('btnCatAll');
+  const btnPartner = document.getElementById('btnCatPartner');
+  const btnMe = document.getElementById('btnCatMe');
+  const label = document.getElementById('widgetCategoryLabel');
+
+  const activeClass = 'widget-cat-btn py-1.5 px-2 rounded-xl neo-border-sm text-xs font-bold bg-secondary-container text-on-secondary-container active-press transition-all';
+  const inactiveClass = 'widget-cat-btn py-1.5 px-2 rounded-xl neo-border-sm text-xs font-bold bg-surface text-on-surface-variant hover:bg-secondary-container active-press transition-all';
+
+  if (btnAll) btnAll.className = cat === 'all' ? activeClass : inactiveClass;
+  if (btnPartner) btnPartner.className = cat === 'partner' ? activeClass : inactiveClass;
+  if (btnMe) btnMe.className = cat === 'me' ? activeClass : inactiveClass;
+
+  if (label) {
+    if (cat === 'partner') label.innerText = 'Pasangan Saja';
+    else if (cat === 'me') label.innerText = 'Saya Saja';
+    else label.innerText = 'Semua PAP';
+  }
+
+  if (window.Capacitor?.Plugins?.WidgetPlugin) {
+    window.Capacitor.Plugins.WidgetPlugin.setWidgetCategory({ category: cat }).catch(() => {});
+  }
+
+  vibrate(25);
+  updateSimulatedWidget();
+}
+
 function setWidgetSize(size) {
   widgetSize = size;
   const container = document.getElementById('simulatedWidgetContainer');
-  const btnLandscape = document.getElementById('btnWidgetLandscape');
-  const btnMedium = document.getElementById('btnWidgetMedium');
-  const btnSmall = document.getElementById('btnWidgetSmall');
+  
+  const buttons = {
+    landscape: document.getElementById('btnWidgetLandscape'),
+    full: document.getElementById('btnWidgetFull'),
+    square: document.getElementById('btnWidgetSquare'),
+    polaroid: document.getElementById('btnWidgetPolaroid'),
+    kangen: document.getElementById('btnWidgetKangen'),
+    countdown: document.getElementById('btnWidgetCountdown')
+  };
 
-  const activeBtnClass = 'flex-1 py-2 px-2 rounded-xl neo-border-sm font-label-bold text-xs bg-secondary-container text-on-secondary-container active-press whitespace-nowrap';
-  const inactiveBtnClass = 'flex-1 py-2 px-2 rounded-xl neo-border-sm font-label-bold text-xs bg-surface text-on-surface-variant active-press whitespace-nowrap';
+  const activeBtnClass = 'py-2 px-1.5 rounded-xl neo-border-sm font-label-bold text-[11px] bg-secondary-container text-on-secondary-container active-press text-center';
+  const inactiveBtnClass = 'py-2 px-1.5 rounded-xl neo-border-sm font-label-bold text-[11px] bg-surface text-on-surface-variant active-press text-center';
 
-  if (btnLandscape) btnLandscape.className = size === 'landscape' ? activeBtnClass : inactiveBtnClass;
-  if (btnMedium) btnMedium.className = size === 'medium' ? activeBtnClass : inactiveBtnClass;
-  if (btnSmall) btnSmall.className = size === 'small' ? activeBtnClass : inactiveBtnClass;
+  for (const [key, btn] of Object.entries(buttons)) {
+    if (btn) btn.className = key === size ? activeBtnClass : inactiveBtnClass;
+  }
 
-  if (size === 'small') {
-    if (container) container.className = 'octo-widget bg-surface rounded-2xl p-2.5 relative cursor-pointer max-w-[190px] mx-auto transition-all';
+  const pinText = document.getElementById('pinWidgetBtnText');
+  const sizeNames = {
+    landscape: '4x2 Memanjang',
+    full: '4x2 Full Frame',
+    square: '2x2 Kotak',
+    polaroid: '2x2 Polaroid',
+    kangen: '2x2 Kangen Counter',
+    countdown: '4x2 Hari Jadian'
+  };
+  if (pinText) {
+    pinText.innerText = `Pasang Widget ${sizeNames[size] || size} ke Home Screen`;
+  }
+
+  if (size === 'square' || size === 'polaroid' || size === 'kangen') {
+    if (container) container.className = 'octo-widget bg-surface rounded-2xl p-2.5 relative cursor-pointer max-w-[200px] mx-auto transition-all';
   } else {
     if (container) container.className = 'octo-widget bg-surface rounded-2xl p-2.5 relative cursor-pointer w-full transition-all';
   }
@@ -1070,9 +1401,36 @@ function setWidgetSize(size) {
   updateSimulatedWidget();
 }
 
+// --- Sticker Badges Category Filter ---
+function filterStickerCategory(cat) {
+  const pills = document.querySelectorAll('#stickerPillsContainer .sticker-btn');
+  pills.forEach(pill => {
+    const pillCat = pill.getAttribute('data-cat');
+    if (cat === 'all' || pillCat === cat) {
+      pill.style.display = 'inline-block';
+    } else {
+      pill.style.display = 'none';
+    }
+  });
+
+  const links = {
+    all: document.getElementById('stkCatAll'),
+    santai: document.getElementById('stkCatSantai'),
+    luar: document.getElementById('stkCatLuar'),
+    spesial: document.getElementById('stkCatSpesial')
+  };
+
+  for (const [key, link] of Object.entries(links)) {
+    if (link) {
+      link.className = key === cat ? 'text-primary underline font-bold' : 'text-on-surface-variant font-bold';
+    }
+  }
+}
+
 function triggerWidgetQuickReaction() {
   playSound('heart');
   vibrate(50);
+  triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
   showToast('Reaksi ❤️ dikirim dari Widget ke HP Pasangan!', 'favorite');
   
   if (moments.length > 0) {
@@ -1080,54 +1438,6 @@ function triggerWidgetQuickReaction() {
   }
 }
 
-async function simulatePartnerPapDrop() {
-  const captions = [
-    'Lagi mampir ke toko bunga, liat bunga mawar jadi inget kamu 🌹',
-    'Baru aja selesai ngerjain tugas, kangen banget pengen telponan 🥺',
-    'Minum boba favorit kita berdua! Enak bangett 🧋',
-    'Tadi di jalan liat kucing lucu mirip kamu hehe 🐱'
-  ];
-
-  const randomImage = SAMPLE_PRESET_PHOTOS[Math.floor(Math.random() * SAMPLE_PRESET_PHOTOS.length)];
-  const randomCaption = captions[Math.floor(Math.random() * captions.length)];
-
-  if (isSupabaseReady() && currentUser) {
-    const supabase = getSupabase();
-    const { error } = await supabase.from('paps').insert({
-      couple_id: coupleData.id,
-      sender_id: currentUser.id,
-      sender_name: 'Nadia (Simulasi)',
-      photo_url: randomImage,
-      sticker: 'Spontan ✨',
-      caption: randomCaption,
-      like_count: 1
-    });
-
-    if (!error) {
-      showToast('PAP simulasi tersinkron ke Supabase Realtime! 💖', 'cloud_done');
-      return;
-    }
-  }
-
-  const newDrop = {
-    id: `sim-${Date.now()}`,
-    coupleId: coupleData.id || 'couple-1',
-    senderId: currentUser?.id || 'sim-user',
-    senderName: 'Nadia (Simulasi)',
-    image: randomImage,
-    caption: randomCaption,
-    sticker: 'Spontan ✨',
-    timestamp: new Date().toISOString(),
-    reactions: { '❤️': 1 },
-    comments: []
-  };
-
-  moments.unshift(newDrop);
-  saveData();
-  renderHomeView();
-  renderFeed(currentFilter);
-  updateSimulatedWidget();
-}
 
 // --- PAP Capture & Upload Studio Modal ---
 function openPapModal() {
@@ -1192,7 +1502,98 @@ async function startLiveCamera() {
   }
 }
 
+// --- PAP MEDIA STATE (PHOTO & 10s VIDEO) ---
+let currentPapMode = 'photo'; // 'photo' | 'video'
+let mediaRecorder = null;
+let recordedVideoChunks = [];
+let currentCapturedVideoBlob = null;
+let currentCapturedVideoUrl = null;
+let videoThumbnailUrl = null;
+let recordTimerInterval = null;
+let recordDurationSeconds = 0;
+let isRecordingVideo = false;
+
+function setPapMode(mode) {
+  currentPapMode = mode;
+  const btnPhoto = document.getElementById('btnModePhoto');
+  const btnVideo = document.getElementById('btnModeVideo');
+  const placeholderIcon = document.getElementById('placeholderIconContainer');
+  const placeholderTitle = document.getElementById('placeholderTitle');
+  const placeholderSubtitle = document.getElementById('placeholderSubtitle');
+  const btnOpenLiveCamText = document.getElementById('btnOpenLiveCamText');
+  const samplePicker = document.getElementById('samplePhotosPicker');
+  const shutterCircle = document.getElementById('shutterInnerCircle');
+
+  if (mode === 'photo') {
+    if (btnPhoto) btnPhoto.className = 'py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 bg-surface text-on-background neo-border-sm shadow-sm transition-all';
+    if (btnVideo) btnVideo.className = 'py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 text-on-surface-variant hover:bg-surface/50 transition-all';
+    if (placeholderIcon) placeholderIcon.innerText = '📸';
+    if (placeholderTitle) placeholderTitle.innerText = 'Ambil Foto atau Pilih dari Galeri';
+    if (placeholderSubtitle) placeholderSubtitle.innerText = 'Tunjukkan ke pasangan apa yang lagi kamu lakuin!';
+    if (btnOpenLiveCamText) btnOpenLiveCamText.innerText = 'Buka Kamera Foto';
+    if (samplePicker) samplePicker.classList.remove('hidden');
+    if (shutterCircle) shutterCircle.className = 'shutter-inner bg-white';
+  } else {
+    if (btnPhoto) btnPhoto.className = 'py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 text-on-surface-variant hover:bg-surface/50 transition-all';
+    if (btnVideo) btnVideo.className = 'py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 bg-red-50 text-red-700 neo-border-sm shadow-sm transition-all';
+    if (placeholderIcon) placeholderIcon.innerText = '🎥';
+    if (placeholderTitle) placeholderTitle.innerText = 'Rekam Video Singkat (Maks. 10 Detik)';
+    if (placeholderSubtitle) placeholderSubtitle.innerText = 'Kirim video manis agar momen kalian terasa lebih hidup!';
+    if (btnOpenLiveCamText) btnOpenLiveCamText.innerText = 'Buka Kamera Video (10s)';
+    if (samplePicker) samplePicker.classList.add('hidden');
+    if (shutterCircle) shutterCircle.className = 'shutter-inner bg-red-600';
+  }
+
+  // If camera is open, restart camera with appropriate constraints (audio for video)
+  if (mediaStream) {
+    stopLiveCamera();
+    startLiveCamera();
+  }
+}
+
+async function startLiveCamera() {
+  const videoEl = document.getElementById('cameraVideo');
+  const imgPreview = document.getElementById('imagePreview');
+  const videoPreview = document.getElementById('videoPlaybackPreview');
+  const placeholder = document.getElementById('cameraPlaceholder');
+  const controls = document.getElementById('activeCameraControls');
+  const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const recordIndicator = document.getElementById('videoRecordIndicator');
+
+  if (imgPreview) imgPreview.classList.add('hidden');
+  if (videoPreview) videoPreview.classList.add('hidden');
+  if (placeholder) placeholder.classList.add('hidden');
+  if (badgeOverlay) badgeOverlay.classList.add('hidden');
+  if (recordIndicator) recordIndicator.classList.add('hidden');
+
+  try {
+    const constraints = {
+      video: {
+        facingMode: currentFacingMode,
+        width: { ideal: 1280 },
+        height: { ideal: 1280 }
+      },
+      audio: currentPapMode === 'video'
+    };
+
+    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+    if (videoEl) {
+      videoEl.srcObject = mediaStream;
+      videoEl.classList.remove('hidden');
+      videoEl.play();
+    }
+    if (controls) controls.classList.remove('hidden');
+  } catch (err) {
+    console.error('Kamera gagal dibuka:', err);
+    showToast('Gagal mengakses kamera: ' + err.message, 'error');
+    if (placeholder) placeholder.classList.remove('hidden');
+  }
+}
+
 function stopLiveCamera() {
+  if (isRecordingVideo) {
+    stopVideoRecording();
+  }
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
     mediaStream = null;
@@ -1205,6 +1606,14 @@ function switchCameraFacing() {
   currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
   stopLiveCamera();
   startLiveCamera();
+}
+
+function handleShutterAction() {
+  if (currentPapMode === 'photo') {
+    takeCameraSnap();
+  } else {
+    toggleVideoRecording();
+  }
 }
 
 function takeCameraSnap() {
@@ -1220,7 +1629,6 @@ function takeCameraSnap() {
   canvas.height = videoEl.videoHeight || 1280;
   const ctx = canvas.getContext('2d');
   
-  // Balikkan (mirror) hasil foto agar sama persis dengan preview layar
   if (currentFacingMode === 'user') {
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
@@ -1229,6 +1637,8 @@ function takeCameraSnap() {
   ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
 
   currentCapturedImage = canvas.toDataURL('image/jpeg', 0.92);
+  currentCapturedVideoBlob = null;
+  currentCapturedVideoUrl = null;
   currentMediaFile = null;
 
   playSound('snap');
@@ -1244,43 +1654,253 @@ function takeCameraSnap() {
   }
 }
 
+// --- 10s VIDEO RECORDING ENGINE ---
+function toggleVideoRecording() {
+  if (!isRecordingVideo) {
+    startVideoRecording();
+  } else {
+    stopVideoRecording();
+  }
+}
+
+function startVideoRecording() {
+  if (!mediaStream) return;
+
+  recordedVideoChunks = [];
+  recordDurationSeconds = 0;
+  isRecordingVideo = true;
+
+  const shutterBtn = document.getElementById('mainShutterBtn');
+  const recordIndicator = document.getElementById('videoRecordIndicator');
+  const recordTimerText = document.getElementById('recordTimerText');
+
+  if (shutterBtn) shutterBtn.classList.add('recording');
+  if (recordIndicator) {
+    recordIndicator.classList.remove('hidden');
+    recordIndicator.classList.add('flex');
+  }
+  if (recordTimerText) recordTimerText.innerText = 'REC 00:00 / 00:10';
+
+  playSound('snap');
+  vibrate([60, 40, 60]);
+
+  try {
+    let options = { mimeType: 'video/webm;codecs=vp8,opus' };
+    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+      options = { mimeType: 'video/webm' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options = { mimeType: 'video/mp4' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = {};
+        }
+      }
+    }
+
+    mediaRecorder = new MediaRecorder(mediaStream, options);
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        recordedVideoChunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      finalizeVideoRecording();
+    };
+
+    mediaRecorder.start(200);
+
+    // Timer countdown 0 to 10 seconds
+    const startTime = Date.now();
+    recordTimerInterval = setInterval(() => {
+      const elapsedMs = Date.now() - startTime;
+      const elapsedSec = Math.min(10, elapsedMs / 1000);
+      const displaySec = Math.floor(elapsedSec);
+      const displayMs = Math.floor((elapsedSec % 1) * 10);
+      
+      if (recordTimerText) {
+        recordTimerText.innerText = `REC 00:0${displaySec}.${displayMs} / 00:10`;
+      }
+
+      if (elapsedSec >= 10) {
+        stopVideoRecording();
+      }
+    }, 100);
+
+  } catch (err) {
+    console.error('Gagal memulai perekaman video:', err);
+    showToast('Perekaman video tidak didukung browser ini: ' + err.message, 'error');
+    stopVideoRecording();
+  }
+}
+
+function stopVideoRecording() {
+  if (!isRecordingVideo) return;
+  isRecordingVideo = false;
+
+  if (recordTimerInterval) {
+    clearInterval(recordTimerInterval);
+    recordTimerInterval = null;
+  }
+
+  const shutterBtn = document.getElementById('mainShutterBtn');
+  const recordIndicator = document.getElementById('videoRecordIndicator');
+
+  if (shutterBtn) shutterBtn.classList.remove('recording');
+  if (recordIndicator) {
+    recordIndicator.classList.add('hidden');
+    recordIndicator.classList.remove('flex');
+  }
+
+  playSound('snap');
+  vibrate(50);
+
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+}
+
+function finalizeVideoRecording() {
+  const mimeType = mediaRecorder?.mimeType || 'video/mp4';
+  currentCapturedVideoBlob = new Blob(recordedVideoChunks, { type: mimeType });
+  currentCapturedVideoUrl = URL.createObjectURL(currentCapturedVideoBlob);
+  currentMediaFile = currentCapturedVideoBlob;
+  currentCapturedImage = null;
+
+  // Generate thumbnail from first frame
+  captureVideoThumbnail(currentCapturedVideoUrl);
+
+  const videoPreview = document.getElementById('videoPlaybackPreview');
+  const controls = document.getElementById('activeCameraControls');
+  const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const soundToggleBtn = document.getElementById('videoSoundToggleBtn');
+
+  stopLiveCamera();
+
+  if (videoPreview) {
+    videoPreview.src = currentCapturedVideoUrl;
+    videoPreview.classList.remove('hidden');
+    videoPreview.muted = false;
+    videoPreview.play();
+  }
+
+  if (controls) controls.classList.add('hidden');
+  if (soundToggleBtn) soundToggleBtn.classList.remove('hidden');
+  if (badgeOverlay) {
+    badgeOverlay.innerText = selectedSticker + ' 🎥 10s';
+    badgeOverlay.classList.remove('hidden');
+  }
+
+  showToast('Video 10 detik berhasil direkam! 🎥', 'videocam');
+}
+
+function captureVideoThumbnail(videoUrl) {
+  const tempVideo = document.createElement('video');
+  tempVideo.src = videoUrl;
+  tempVideo.muted = true;
+  tempVideo.playsInline = true;
+  tempVideo.currentTime = 0.5;
+
+  tempVideo.onloadeddata = () => {
+    const canvas = document.getElementById('captureCanvas') || document.createElement('canvas');
+    canvas.width = tempVideo.videoWidth || 640;
+    canvas.height = tempVideo.videoHeight || 640;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+    videoThumbnailUrl = canvas.toDataURL('image/jpeg', 0.85);
+  };
+}
+
+function togglePreviewSound() {
+  const videoPreview = document.getElementById('videoPlaybackPreview');
+  const soundIcon = document.getElementById('videoSoundIcon');
+  if (videoPreview && soundIcon) {
+    videoPreview.muted = !videoPreview.muted;
+    soundIcon.innerText = videoPreview.muted ? 'volume_off' : 'volume_up';
+    vibrate(20);
+  }
+}
+
 function handleFileSelected(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
+  const isVideo = file.type.startsWith('video/');
   currentMediaFile = file;
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    currentCapturedImage = e.target.result;
-    const imgPreview = document.getElementById('imagePreview');
-    const placeholder = document.getElementById('cameraPlaceholder');
-    const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const imgPreview = document.getElementById('imagePreview');
+  const videoPreview = document.getElementById('videoPlaybackPreview');
+  const placeholder = document.getElementById('cameraPlaceholder');
+  const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const soundToggleBtn = document.getElementById('videoSoundToggleBtn');
 
-    stopLiveCamera();
-    if (placeholder) placeholder.classList.add('hidden');
-    if (imgPreview) {
-      imgPreview.src = currentCapturedImage;
-      imgPreview.classList.remove('hidden');
+  stopLiveCamera();
+  if (placeholder) placeholder.classList.add('hidden');
+
+  if (isVideo) {
+    currentPapMode = 'video';
+    currentCapturedVideoBlob = file;
+    currentCapturedVideoUrl = URL.createObjectURL(file);
+    currentCapturedImage = null;
+
+    captureVideoThumbnail(currentCapturedVideoUrl);
+
+    if (imgPreview) imgPreview.classList.add('hidden');
+    if (videoPreview) {
+      videoPreview.src = currentCapturedVideoUrl;
+      videoPreview.classList.remove('hidden');
+      videoPreview.muted = false;
+      videoPreview.play();
     }
+    if (soundToggleBtn) soundToggleBtn.classList.remove('hidden');
     if (badgeOverlay) {
-      badgeOverlay.innerText = selectedSticker;
+      badgeOverlay.innerText = selectedSticker + ' 🎥';
       badgeOverlay.classList.remove('hidden');
     }
-    playSound('snap');
-    vibrate(30);
-  };
-  reader.readAsDataURL(file);
+    showToast('Video dipilih dari galeri! 🎥 (Maks. 10s)', 'videocam');
+  } else {
+    currentPapMode = 'photo';
+    currentCapturedVideoBlob = null;
+    currentCapturedVideoUrl = null;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      currentCapturedImage = e.target.result;
+      if (videoPreview) videoPreview.classList.add('hidden');
+      if (soundToggleBtn) soundToggleBtn.classList.add('hidden');
+      if (imgPreview) {
+        imgPreview.src = currentCapturedImage;
+        imgPreview.classList.remove('hidden');
+      }
+      if (badgeOverlay) {
+        badgeOverlay.innerText = selectedSticker;
+        badgeOverlay.classList.remove('hidden');
+      }
+    };
+    reader.readAsDataURL(file);
+    showToast('Foto dipilih dari galeri! 📸', 'photo');
+  }
+
+  playSound('snap');
+  vibrate(30);
 }
 
 function pickSamplePhoto(index) {
+  currentPapMode = 'photo';
   currentCapturedImage = SAMPLE_PRESET_PHOTOS[index] || SAMPLE_PRESET_PHOTOS[0];
   currentMediaFile = null;
+  currentCapturedVideoBlob = null;
+  currentCapturedVideoUrl = null;
+
   const imgPreview = document.getElementById('imagePreview');
+  const videoPreview = document.getElementById('videoPlaybackPreview');
   const placeholder = document.getElementById('cameraPlaceholder');
   const badgeOverlay = document.getElementById('previewBadgeOverlay');
+  const soundToggleBtn = document.getElementById('videoSoundToggleBtn');
 
   stopLiveCamera();
+  if (videoPreview) videoPreview.classList.add('hidden');
+  if (soundToggleBtn) soundToggleBtn.classList.add('hidden');
   if (placeholder) placeholder.classList.add('hidden');
   if (imgPreview) {
     imgPreview.src = currentCapturedImage;
@@ -1300,7 +1920,8 @@ function selectSticker(name) {
 
   const badgeOverlay = document.getElementById('previewBadgeOverlay');
   if (badgeOverlay) {
-    badgeOverlay.innerText = selectedSticker;
+    const extraTag = currentPapMode === 'video' ? ' 🎥 10s' : '';
+    badgeOverlay.innerText = selectedSticker + extraTag;
   }
   vibrate(15);
 }
@@ -1315,88 +1936,155 @@ function updateStickerButtons() {
   });
 }
 
-// --- Submit New PAP to Supabase Storage & Database ---
+// --- Submit New PAP (Photo or 10s Video) to Supabase Storage & Database ---
 async function submitNewPap() {
-  if (!currentCapturedImage && !currentMediaFile) {
-    showToast('Pilih atau ambil foto terlebih dahulu!', 'warning');
+  const isVideo = currentPapMode === 'video' && (currentCapturedVideoBlob || (currentMediaFile && currentMediaFile.type?.startsWith('video/')));
+  
+  if (!isVideo && !currentCapturedImage && !currentMediaFile) {
+    showToast('Pilih atau rekam PAP terlebih dahulu!', 'warning');
     vibrate(60);
     return;
   }
 
   const captionInput = document.getElementById('papCaptionInput');
-  const caption = captionInput?.value.trim() || 'PAP hari ini buat kamu tersayang! ❤️';
+  const caption = captionInput?.value.trim() || (isVideo ? 'Video 10 detik spesial buat kamu! 🎥❤️' : 'PAP hari ini buat kamu tersayang! ❤️');
   const activeUser = coupleData.users[coupleData.activeUser] || { name: 'Pengguna' };
 
   closePapModal();
   playSound('heart');
   vibrate([40, 60, 40]);
-  showToast('Mengunggah foto ke Supabase Storage... 🚀', 'cloud_upload');
+  showToast(isVideo ? 'Mengunggah video 10 detik... 🎥🚀' : 'Mengompres & mengunggah foto... 📸🚀', 'cloud_upload');
 
-  let publicPhotoUrl = currentCapturedImage;
+  let publicMediaUrl = '';
+  let publicThumbUrl = videoThumbnailUrl || currentCapturedImage || SAMPLE_PRESET_PHOTOS[0];
 
   if (isSupabaseReady() && currentUser) {
     const supabase = getSupabase();
     try {
-      // 1. Prepare File / Blob
-      let fileToUpload = currentMediaFile;
-      if (!fileToUpload && currentCapturedImage?.startsWith('data:')) {
-        fileToUpload = dataURItoBlob(currentCapturedImage);
-      }
-
-      if (fileToUpload) {
-        const fileExt = fileToUpload.type === 'image/png' ? 'png' : 'jpg';
-        const fileName = `${coupleData.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-        // Upload to bucket 'pap-photos'
-        const { error: uploadError } = await supabase.storage
+      if (isVideo) {
+        const fileExt = currentCapturedVideoBlob?.type?.includes('mp4') ? 'mp4' : 'webm';
+        const fileName = `${coupleData.id}/video_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        // Upload video
+        const { error: videoErr } = await supabase.storage
           .from('pap-photos')
-          .upload(fileName, fileToUpload, {
-            contentType: fileToUpload.type || 'image/jpeg',
+          .upload(fileName, currentCapturedVideoBlob, {
+            contentType: currentCapturedVideoBlob.type || 'video/mp4',
             upsert: true
           });
 
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
+        if (!videoErr) {
+          const { data: pubData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
+          publicMediaUrl = pubData?.publicUrl || '';
+        }
+
+        // Upload thumbnail if available
+        if (videoThumbnailUrl) {
+          const thumbBlob = dataURItoBlob(videoThumbnailUrl);
+          const thumbName = `${coupleData.id}/thumb_${Date.now()}.jpg`;
+          const { error: thumbErr } = await supabase.storage
             .from('pap-photos')
-            .getPublicUrl(fileName);
-          publicPhotoUrl = publicUrlData.publicUrl;
-        } else {
-          console.warn('Gagal unggah ke Supabase Storage, menggunakan foto langsung:', uploadError.message);
+            .upload(thumbName, thumbBlob, { contentType: 'image/jpeg', upsert: true });
+
+          if (!thumbErr) {
+            const { data: thumbPub } = supabase.storage.from('pap-photos').getPublicUrl(thumbName);
+            publicThumbUrl = thumbPub?.publicUrl || publicThumbUrl;
+          }
+        }
+      } else {
+        // Photo upload
+        let fileSource = currentMediaFile || currentCapturedImage;
+        let compressedResult = await compressImage(fileSource, 1280, 1280, 0.85);
+        publicThumbUrl = compressedResult.dataUrl || currentCapturedImage;
+
+        let fileToUpload = compressedResult.blob;
+        if (!fileToUpload && publicThumbUrl?.startsWith('data:')) {
+          fileToUpload = dataURItoBlob(publicThumbUrl);
+        }
+
+        if (fileToUpload) {
+          const fileExt = 'jpg';
+          const fileName = `${coupleData.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage
+            .from('pap-photos')
+            .upload(fileName, fileToUpload, { contentType: 'image/jpeg', upsert: true });
+
+          if (!uploadError) {
+            const { data: publicUrlData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
+            if (publicUrlData?.publicUrl) {
+              publicThumbUrl = publicUrlData.publicUrl;
+              publicMediaUrl = publicUrlData.publicUrl;
+            }
+          }
         }
       }
 
-      // 2. Insert Database Record
+      // Insert Database Record
       const { error: dbError } = await supabase.from('paps').insert({
         couple_id: coupleData.id,
         sender_id: currentUser.id,
         sender_name: activeUser.name,
         sender_avatar: activeUser.avatar || '',
-        photo_url: publicPhotoUrl,
-        sticker: selectedSticker,
+        photo_url: publicThumbUrl,
+        video_url: isVideo ? (publicMediaUrl || currentCapturedVideoUrl) : null,
+        is_video: isVideo,
+        sticker: selectedSticker + (isVideo ? ' 🎥' : ''),
         caption: caption,
         like_count: 1
       });
 
       if (dbError) throw dbError;
 
-      showToast('PAP tersimpan di Supabase! 💖', 'check_circle');
+      triggerConfetti();
+      showToast(isVideo ? 'PAP Video 10s terkirim! 🎥💖' : 'PAP Foto terkirim! 📸💖', 'check_circle');
       
-      // Kirim Push Notification dengan payload widget update
-      sendPushNotification('PAP Baru Masuk! 📸', `${activeUser.name} ngirim PAP nih, cek sekarang!`, { 
+      // Kirim Push Notification lengkap dengan preview
+      const notifTitle = isVideo ? 'PAP Video Baru Masuk! 🎥' : 'PAP Baru Masuk! 📸';
+      const notifBody = isVideo ? `${activeUser.name} mengirim video 10 detik manis untukmu, tonton sekarang!` : `${activeUser.name} ngirim PAP spesial nih, yuk intip!`;
+
+      sendPushNotification(notifTitle, notifBody, { 
         event: 'new_pap',
         widget_update: 'true',
-        imageUrl: publicPhotoUrl,
+        imageUrl: publicThumbUrl,
+        videoUrl: publicMediaUrl,
+        isVideo: isVideo ? 'true' : 'false',
         senderName: activeUser.name,
         caption: caption || '',
-        tagText: selectedSticker || 'PAP ✨'
+        tagText: selectedSticker + (isVideo ? ' 🎥' : ' ✨')
       });
       
       fetchMomentsFromSupabase();
       return;
     } catch (err) {
-      console.warn('Supabase Error:', err.message);
+      console.warn('Supabase Error saat unggah PAP:', err.message);
     }
   }
+
+  // Fallback offline / local moment
+  const newMoment = {
+    id: 'local-' + Date.now(),
+    image: publicThumbUrl || currentCapturedImage || SAMPLE_PRESET_PHOTOS[0],
+    videoUrl: isVideo ? currentCapturedVideoUrl : null,
+    isVideo: isVideo,
+    senderId: currentUser?.id || coupleData.activeUser,
+    senderName: activeUser.name,
+    senderAvatar: activeUser.avatar || '',
+    timeAgo: 'Baru saja',
+    exactTime: new Date().toLocaleTimeString('id-ID'),
+    caption: caption,
+    sticker: selectedSticker + (isVideo ? ' 🎥' : ''),
+    comments: [],
+    reactions: { '❤️': 1 }
+  };
+
+  moments.unshift(newMoment);
+  saveData();
+  renderFeed(currentFilter);
+  renderHomeView();
+  updateStreakUI();
+  triggerConfetti();
+  showToast(isVideo ? 'PAP Video 10s tersimpan! 🎥' : 'PAP Foto tersimpan! 📸', 'check_circle');
+}
 
   // Fallback local persistence
   const newMoment = {
@@ -1416,9 +2104,10 @@ async function submitNewPap() {
   renderHomeView();
   renderFeed(currentFilter);
   updateSimulatedWidget();
-  showToast('PAP tersimpan di perangkat (Mode Offline)! 💖', 'check_circle');
+  triggerConfetti();
+  showToast('PAP tersimpan di perangkat! 💖', 'check_circle');
 
-  spawnFloatingEmoji('💖', window.innerWidth / 2, window.innerHeight / 2);
+  triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
 }
 
 // --- Mood Tracker Logic ---
@@ -1434,7 +2123,7 @@ function closeMoodPickerModal() {
 
 async function setUserMood(emoji, text) {
   const currentKey = coupleData.activeUser;
-  const activeUser = coupleData.users[currentKey] || { id: currentUser?.id };
+  const activeUser = coupleData.users[currentKey] || { id: currentUser?.id, name: 'Kamu' };
   activeUser.moodEmoji = emoji;
   activeUser.moodText = text;
   saveData();
@@ -1442,6 +2131,7 @@ async function setUserMood(emoji, text) {
   closeMoodPickerModal();
   playSound('toast');
   vibrate(30);
+  triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
   showToast(`Mood kamu diperbarui: ${emoji} "${text}"`, 'mood');
   updateUIForActiveUser();
 
@@ -1455,21 +2145,27 @@ async function setUserMood(emoji, text) {
       mood_text: text,
       updated_at: new Date().toISOString()
     });
+
+    // Kirim Push Notification update mood
+    sendPushNotification('Mood Pasangan Diperbarui ✨', `${activeUser.name} sekarang lagi ${emoji} ${text}`, {
+      event: 'mood',
+      senderName: activeUser.name,
+      tagText: emoji,
+      caption: text
+    });
   }
 }
 
 // --- Love Poke Action ---
 async function sendLovePoke() {
-  const activeUser = coupleData.users[coupleData.activeUser];
+  const activeUser = coupleData.users[coupleData.activeUser] || { name: 'Pasangan' };
   const partner = Object.values(coupleData.users).find((user) => user.id !== activeUser?.id);
   const partnerName = partner?.name || 'pasanganmu';
 
   playSound('heart');
   vibrate([50, 50, 50]);
+  triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
   showToast(`Love poke terkirim ke ${partnerName}! 💖 "Aku kangen kamu!"`, 'favorite');
-
-  spawnFloatingEmoji('❤️', window.innerWidth - 60, 60);
-  spawnFloatingEmoji('🥰', window.innerWidth - 80, 80);
 
   if (isSupabaseReady() && supabaseRealtimeChannel && currentUser) {
     supabaseRealtimeChannel.send({
@@ -1482,41 +2178,147 @@ async function sendLovePoke() {
     });
   }
 
-  // Kirim ke backend Vercel untuk Push Notification
-  sendPushNotification('Panggilan Rindu! 🥺', `${activeUser.name} kangen banget sama kamu!`, { event: 'love_poke' });
+  // Kirim ke backend FCM untuk Push Notification
+  sendPushNotification('Panggilan Rindu! 🥺❤️', `${activeUser.name} lagi kangen banget sama kamu!`, { 
+    event: 'kangen',
+    senderName: activeUser.name,
+    tagText: 'Rindu 🥺'
+  });
 }
 
-// --- Push Notification Helper ---
+// --- Push Notification Helper (FCM & Realtime Broadcast Handler) ---
 async function sendPushNotification(title, body, data = {}) {
-    if (!isSupabaseReady() || !currentUser) return;
-    try {
-        const supabase = getSupabase();
-        
-        // Ambil token pasangan dari Supabase
-        const { data: members, error } = await supabase
-            .from('members')
-            .select('fcm_token')
-            .neq('id', currentUser.id)
-            .limit(1);
-            
-        if (error || !members || members.length === 0 || !members[0].fcm_token) return;
-        
-        const partnerToken = members[0].fcm_token;
-        
-        // Kirim HTTP POST ke Vercel Serverless Function
-        await fetch('/api/fcm', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                token: partnerToken,
-                title: title,
-                body: body,
-                data: data
-            })
+  if (!isSupabaseReady() || !currentUser) return;
+  try {
+    const supabase = getSupabase();
+    
+    // 1. Broadcast via Realtime channel
+    if (supabaseRealtimeChannel) {
+      try {
+        supabaseRealtimeChannel.send({
+          type: 'broadcast',
+          event: data.event || 'notification',
+          payload: {
+            senderId: currentUser.id,
+            senderName: coupleData.users[currentUser.id]?.name || 'Pasangan',
+            title,
+            body,
+            ...data
+          }
         });
-    } catch (err) {
-        console.error('Push error:', err);
+      } catch (bcErr) {
+        console.warn('Realtime broadcast error:', bcErr);
+      }
     }
+
+    // 2. Ambil token pasangan dari Supabase (filter by couple_id)
+    const { data: members, error } = await supabase
+      .from('members')
+      .select('fcm_token, name')
+      .eq('couple_id', coupleData.id)
+      .neq('id', currentUser.id)
+      .not('fcm_token', 'is', null);
+        
+    if (error || !members || members.length === 0 || !members[0]?.fcm_token) {
+      console.log('Token FCM pasangan belum terdaftar di database.');
+      return;
+    }
+    
+    const partnerToken = members[0].fcm_token;
+    const payload = {
+      token: partnerToken,
+      title: title,
+      body: body,
+      data: {
+        ...data,
+        title,
+        body,
+        widget_update: 'true'
+      }
+    };
+
+    // Kirim via endpoint Vercel production & fallback lokal
+    try {
+      await fetch('https://octoleven.vercel.app/api/fcm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      console.log('Push notification berhasil dikirim ke pasangan via FCM!');
+    } catch (vercelErr) {
+      try {
+        await fetch('/api/fcm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (localErr) {
+        console.warn('FCM dispatch failed:', localErr);
+      }
+    }
+  } catch (err) {
+    console.error('Push notification dispatch error:', err);
+  }
+}
+
+// Request & Register Push Notification Permissions (Android Native & Web)
+async function requestPushPermissionsAndRegister() {
+  showToast('Memeriksa & meminta izin notifikasi...', 'notifications');
+  vibrate(30);
+
+  let nativePushGranted = false;
+  let localNotifGranted = false;
+
+  // 1. Android Capacitor Push Notifications
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
+    try {
+      const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+      let perm = await PushNotifications.checkPermissions();
+      if (perm.receive !== 'granted') {
+        perm = await PushNotifications.requestPermissions();
+      }
+      if (perm.receive === 'granted') {
+        nativePushGranted = true;
+        await PushNotifications.register();
+      }
+    } catch (e) {
+      console.warn('PushNotifications error:', e);
+    }
+  }
+
+  // 2. Android Capacitor Local Notifications
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+    try {
+      const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+      let localPerm = await LocalNotifications.checkPermissions();
+      if (localPerm.display !== 'granted') {
+        localPerm = await LocalNotifications.requestPermissions();
+      }
+      if (localPerm.display === 'granted') {
+        localNotifGranted = true;
+      }
+    } catch (e) {
+      console.warn('LocalNotifications error:', e);
+    }
+  }
+
+  // 3. Web Notification API
+  if ('Notification' in window) {
+    try {
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        await Notification.requestPermission();
+      }
+    } catch(e) {}
+  }
+
+  // Update Status Badge di UI
+  const badge = document.getElementById('fcmStatusBadge');
+  if (badge) {
+    badge.innerText = 'Aktif ✅';
+    badge.className = 'text-[10px] font-bold px-2 py-0.2 rounded-full neo-border-sm bg-green-100 text-green-800';
+  }
+
+  showToast('Izin notifikasi pasangan aktif! 🔔', 'notifications');
 }
 
 // --- Pairing & Code Helpers ---
@@ -1640,7 +2442,489 @@ async function handleAvatarUpload(event) {
   }
 }
 
-// --- AGENDA & NOTIFIKASI ---
+// --- API STREAK (FLAME STREAK) SYSTEM ---
+function calculateFlameStreak() {
+  const activeUser = coupleData.users[coupleData.activeUser] || { id: coupleData.activeUser || 'local-user', name: 'Kamu' };
+  const partnerUser = Object.values(coupleData.users).find((user) => user.id !== activeUser.id) || { id: 'partner', name: 'Pasangan' };
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  
+  // Group moments by YYYY-MM-DD
+  const momentsByDate = {};
+  moments.forEach((m) => {
+    const dStr = (m.createdAt ? new Date(m.createdAt) : new Date()).toISOString().split('T')[0];
+    if (!momentsByDate[dStr]) {
+      momentsByDate[dStr] = { me: 0, partner: 0 };
+    }
+    if (m.senderId === activeUser.id || m.senderName === activeUser.name) {
+      momentsByDate[dStr].me++;
+    } else {
+      momentsByDate[dStr].partner++;
+    }
+  });
+
+  const meSentToday = (momentsByDate[todayStr]?.me || 0) > 0;
+  const partnerSentToday = (momentsByDate[todayStr]?.partner || 0) > 0;
+  const bothSentToday = meSentToday && partnerSentToday;
+
+  let streak = 0;
+  let checkDate = new Date();
+
+  // If both sent today, include today in streak
+  if (bothSentToday) {
+    streak++;
+    checkDate.setDate(checkDate.getDate() - 1);
+  } else {
+    // If not both sent today yet, count from yesterday backwards
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  while (true) {
+    const dStr = checkDate.toISOString().split('T')[0];
+    const dayData = momentsByDate[dStr];
+    if (dayData && dayData.me > 0 && dayData.partner > 0) {
+      streak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  let todayStatus = 'extinguished';
+  if (bothSentToday) {
+    todayStatus = 'active';
+  } else if (meSentToday || partnerSentToday) {
+    todayStatus = 'pending';
+  } else {
+    todayStatus = 'extinguished';
+  }
+
+  return {
+    streakCount: streak,
+    todayStatus,
+    meSentToday,
+    partnerSentToday,
+    bothSentToday
+  };
+}
+
+function updateStreakUI() {
+  const streak = calculateFlameStreak();
+  
+  // Header Badge
+  const headerStreakIcon = document.getElementById('headerStreakIcon');
+  const headerStreakCount = document.getElementById('headerStreakCount');
+  if (headerStreakIcon && headerStreakCount) {
+    headerStreakCount.innerText = streak.streakCount;
+    if (streak.todayStatus === 'active') {
+      headerStreakIcon.innerText = '🔥';
+      headerStreakIcon.className = 'text-xl flame-active inline-block';
+    } else if (streak.todayStatus === 'pending') {
+      headerStreakIcon.innerText = '⏳';
+      headerStreakIcon.className = 'text-xl inline-block';
+    } else {
+      headerStreakIcon.innerText = '💨';
+      headerStreakIcon.className = 'text-xl inline-block';
+    }
+  }
+
+  // Beranda Banner
+  const homeStreakTitle = document.getElementById('homeStreakTitle');
+  const homeStreakBadge = document.getElementById('homeStreakBadge');
+  const homeStreakSubtitle = document.getElementById('homeStreakSubtitle');
+  const homeStreakFlameIcon = document.getElementById('homeStreakFlameIcon');
+  if (homeStreakTitle && homeStreakBadge && homeStreakSubtitle) {
+    homeStreakTitle.innerText = `Api Streak: ${streak.streakCount} Hari`;
+    if (streak.todayStatus === 'active') {
+      homeStreakBadge.innerText = '🔥 Menyala';
+      homeStreakBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-orange-500 text-white neo-border-sm';
+      homeStreakSubtitle.innerText = 'Kalian berdua sudah kirim PAP hari ini! Pertahankan streak!';
+      if (homeStreakFlameIcon) {
+        homeStreakFlameIcon.innerText = '🔥';
+        homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center neo-border-sm text-2xl flame-active shadow-sm';
+      }
+    } else if (streak.todayStatus === 'pending') {
+      homeStreakBadge.innerText = '⏳ Menunggu Pasangan';
+      homeStreakBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 neo-border-sm';
+      homeStreakSubtitle.innerText = streak.meSentToday ? 'Kamu sudah PAP! Menunggu giliran pasangan.' : 'Pasangan sudah PAP! Yuk kirim PAP giliranmu!';
+      if (homeStreakFlameIcon) {
+        homeStreakFlameIcon.innerText = '🔥';
+        homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center neo-border-sm text-2xl shadow-sm';
+      }
+    } else {
+      homeStreakBadge.innerText = '💨 Belum Hidup';
+      homeStreakBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 neo-border-sm';
+      homeStreakSubtitle.innerText = 'Kirim PAP hari ini untuk mengaktifkan apinya!';
+      if (homeStreakFlameIcon) {
+        homeStreakFlameIcon.innerText = '💨';
+        homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-slate-400 text-white flex items-center justify-center neo-border-sm text-2xl shadow-sm';
+      }
+    }
+  }
+
+  // Tab Kita Streak Card
+  const kitaStreakDayText = document.getElementById('kitaStreakDayText');
+  const kitaStreakStatusPill = document.getElementById('kitaStreakStatusPill');
+  const kitaStreakIconContainer = document.getElementById('kitaStreakIconContainer');
+  if (kitaStreakDayText && kitaStreakStatusPill) {
+    kitaStreakDayText.innerText = `Api Streak: ${streak.streakCount} Hari`;
+    if (streak.todayStatus === 'active') {
+      kitaStreakStatusPill.innerText = '🔥 Menyala';
+      kitaStreakStatusPill.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-orange-500 text-white neo-border-sm';
+      if (kitaStreakIconContainer) kitaStreakIconContainer.className = 'w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center neo-border-sm text-xl flame-active shadow-sm';
+    } else if (streak.todayStatus === 'pending') {
+      kitaStreakStatusPill.innerText = '⏳ Menunggu Pasangan';
+      kitaStreakStatusPill.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 neo-border-sm';
+      if (kitaStreakIconContainer) kitaStreakIconContainer.className = 'w-10 h-10 rounded-xl bg-amber-400 text-white flex items-center justify-center neo-border-sm text-xl shadow-sm';
+    } else {
+      kitaStreakStatusPill.innerText = '💨 Belum Hidup';
+      kitaStreakStatusPill.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 neo-border-sm';
+      if (kitaStreakIconContainer) kitaStreakIconContainer.className = 'w-10 h-10 rounded-xl bg-slate-400 text-white flex items-center justify-center neo-border-sm text-xl shadow-sm';
+    }
+  }
+
+  // Flame Reminder Modal status labels
+  const flameStatusMeText = document.getElementById('flameStatusMeText');
+  const flameStatusMeBadge = document.getElementById('flameStatusMeBadge');
+  const flameStatusPartnerText = document.getElementById('flameStatusPartnerText');
+  const flameStatusPartnerBadge = document.getElementById('flameStatusPartnerBadge');
+  if (flameStatusMeText && flameStatusPartnerText) {
+    if (streak.meSentToday) {
+      flameStatusMeText.innerText = 'Sudah PAP ✅';
+      flameStatusMeText.className = 'text-emerald-600 font-bold';
+      if (flameStatusMeBadge) {
+        flameStatusMeBadge.innerText = '1/1 PAP';
+        flameStatusMeBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold';
+      }
+    } else {
+      flameStatusMeText.innerText = 'Belum PAP ❌';
+      flameStatusMeText.className = 'text-red-600 font-bold';
+      if (flameStatusMeBadge) {
+        flameStatusMeBadge.innerText = '0/1 PAP';
+        flameStatusMeBadge.className = 'text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold';
+      }
+    }
+
+    if (streak.partnerSentToday) {
+      flameStatusPartnerText.innerText = 'Sudah PAP ✅';
+      flameStatusPartnerText.className = 'text-emerald-600 font-bold';
+      if (flameStatusPartnerBadge) {
+        flameStatusPartnerBadge.innerText = '1/1 PAP';
+        flameStatusPartnerBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold';
+      }
+    } else {
+      flameStatusPartnerText.innerText = 'Belum PAP ❌';
+      flameStatusPartnerText.className = 'text-red-600 font-bold';
+      if (flameStatusPartnerBadge) {
+        flameStatusPartnerBadge.innerText = '0/1 PAP';
+        flameStatusPartnerBadge.className = 'text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold';
+      }
+    }
+  }
+
+  // Streak Info Modal
+  const streakModalFlameIcon = document.getElementById('streakModalFlameIcon');
+  const streakModalStreakCount = document.getElementById('streakModalStreakCount');
+  const streakModalStatusText = document.getElementById('streakModalStatusText');
+  if (streakModalStreakCount && streakModalStatusText) {
+    streakModalStreakCount.innerText = `${streak.streakCount} Hari Streak`;
+    if (streak.todayStatus === 'active') {
+      streakModalStatusText.innerText = '🔥 Api Berkobar! Kedua pasangan sudah PAP hari ini.';
+      streakModalStatusText.className = 'text-xs text-orange-600 font-bold';
+    } else if (streak.todayStatus === 'pending') {
+      streakModalStatusText.innerText = '⏳ Api Sedang Menunggu! 1 pasangan belum PAP.';
+      streakModalStatusText.className = 'text-xs text-amber-600 font-bold';
+    } else {
+      streakModalStatusText.innerText = '💨 Api Padam! Belum ada yang kirim PAP hari ini.';
+      streakModalStatusText.className = 'text-xs text-slate-600 font-bold';
+    }
+  }
+}
+
+// Extinguished Flame Reminder Check on Session Open
+function checkFlameReminderOnAppOpen() {
+  const dismissed = sessionStorage.getItem('flame_reminder_dismissed');
+  if (dismissed) return;
+
+  const streak = calculateFlameStreak();
+  if (streak.todayStatus !== 'active') {
+    // Show extinguished flame prompt
+    setTimeout(() => {
+      const modal = document.getElementById('flameReminderModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        vibrate(30);
+      }
+    }, 900);
+  }
+}
+
+function closeFlameReminderModal() {
+  sessionStorage.setItem('flame_reminder_dismissed', 'true');
+  const modal = document.getElementById('flameReminderModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function triggerPapFromFlameModal() {
+  closeFlameReminderModal();
+  openPapModal();
+}
+
+function openStreakInfoModal() {
+  updateStreakUI();
+  const modal = document.getElementById('streakInfoModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeStreakInfoModal() {
+  const modal = document.getElementById('streakInfoModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+// --- TANGGAL JADIAN & ANNIVERSARY NOTIFICATION ---
+function openAnniversaryModal() {
+  const modal = document.getElementById('anniversaryModal');
+  const dateInput = document.getElementById('anniversaryDateInput');
+  if (dateInput) {
+    const rawDate = coupleData.relationshipStartDate || new Date().toISOString();
+    dateInput.value = rawDate.split('T')[0];
+  }
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeAnniversaryModal() {
+  const modal = document.getElementById('anniversaryModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+async function saveAnniversaryDate() {
+  const dateInput = document.getElementById('anniversaryDateInput');
+  if (!dateInput || !dateInput.value) {
+    showToast('Pilih tanggal jadian terlebih dahulu!', 'calendar_month');
+    return;
+  }
+
+  const selectedDate = new Date(dateInput.value);
+  if (selectedDate > new Date()) {
+    showToast('Tanggal jadian tidak boleh di masa depan!', 'error');
+    return;
+  }
+
+  const isoDate = selectedDate.toISOString();
+  coupleData.relationshipStartDate = isoDate;
+  saveData();
+
+  // Sync to Supabase
+  const supabase = getSupabase();
+  if (supabase && coupleData.id) {
+    try {
+      await supabase.from('couples').update({
+        relationship_start_date: isoDate
+      }).eq('id', coupleData.id);
+    } catch (e) {
+      console.warn('Gagal sync tanggal jadian ke Supabase:', e);
+    }
+  }
+
+  // Update Android widget
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.WidgetPlugin) {
+    try {
+      const daysTogether = calculateDaysTogether() + ' Hari';
+      window.Capacitor.Plugins.WidgetPlugin.updateWidget({
+        daysCount: daysTogether
+      });
+    } catch(e) {}
+  }
+
+  closeAnniversaryModal();
+  updateUIForActiveUser();
+  triggerConfetti();
+  showToast('Tanggal jadian berhasil diperbarui! 🎉', 'favorite');
+}
+
+// Check Mensiversary / Anniversary Notifications
+function checkAnniversaryNotification() {
+  if (!coupleData.relationshipStartDate) return;
+
+  const startDate = new Date(coupleData.relationshipStartDate);
+  const now = new Date();
+
+  // If today is the same date of month (e.g. 11th)
+  if (startDate.getDate() === now.getDate()) {
+    const lastNotifiedKey = `anniversary_notified_${now.getFullYear()}_${now.getMonth()}`;
+    if (!localStorage.getItem(lastNotifiedKey)) {
+      localStorage.setItem(lastNotifiedKey, 'true');
+
+      const isYearly = startDate.getMonth() === now.getMonth() && startDate.getFullYear() !== now.getFullYear();
+      const yearsDiff = now.getFullYear() - startDate.getFullYear();
+
+      let title = 'Happy Mensiversary! 🎉';
+      let body = 'Hari ini adalah tanggal jadian spesial kalian! Selamat ya! ❤️';
+
+      if (isYearly) {
+        title = `Happy Anniversary ke-${yearsDiff} Tahun! 🎂`;
+        body = `Selamat ulang tahun jadian ke-${yearsDiff} tahun bersama pasangan tercinta! ❤️✨`;
+      }
+
+      showToast(title, 'celebration');
+
+      // Send push notification if possible
+      sendPushNotification(title, body, { event: 'anniversary' });
+
+      // Native local notification
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+        try {
+          window.Capacitor.Plugins.LocalNotifications.schedule({
+            notifications: [
+              {
+                title: title,
+                body: body,
+                id: 8888,
+                schedule: { at: new Date(Date.now() + 1000) }
+              }
+            ]
+          });
+        } catch(e) {}
+      }
+    }
+  }
+}
+
+// --- PROFILE EDITING (EDIT PROFIL KAMU) ---
+let pendingEditAvatar = '';
+
+function openEditProfileModal() {
+  const activeUser = coupleData.users[coupleData.activeUser] || { name: currentUser?.name || 'Rio', avatar: '' };
+  const modal = document.getElementById('profileEditModal');
+  const nameInput = document.getElementById('profileNameInput');
+  const avatarPreview = document.getElementById('profileEditAvatarPreview');
+
+  pendingEditAvatar = activeUser.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${activeUser.name}&backgroundColor=ffdfbf`;
+
+  if (nameInput) nameInput.value = activeUser.name;
+  if (avatarPreview) avatarPreview.src = pendingEditAvatar;
+
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeEditProfileModal() {
+  const modal = document.getElementById('profileEditModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function setProfileAvatarPreset(seed) {
+  pendingEditAvatar = `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=ffdfbf`;
+  const avatarPreview = document.getElementById('profileEditAvatarPreview');
+  if (avatarPreview) avatarPreview.src = pendingEditAvatar;
+}
+
+async function saveProfileChanges() {
+  const nameInput = document.getElementById('profileNameInput');
+  const newName = nameInput ? nameInput.value.trim() : '';
+
+  if (!newName) {
+    showToast('Nama tidak boleh kosong!', 'error');
+    return;
+  }
+
+  if (coupleData.activeUser && coupleData.users[coupleData.activeUser]) {
+    coupleData.users[coupleData.activeUser].name = newName;
+    if (pendingEditAvatar) coupleData.users[coupleData.activeUser].avatar = pendingEditAvatar;
+  }
+
+  saveData();
+
+  // Save to Supabase
+  const supabase = getSupabase();
+  if (supabase && currentUser) {
+    try {
+      await supabase.from('members').update({
+        name: newName,
+        avatar: pendingEditAvatar,
+        updated_at: new Date().toISOString()
+      }).eq('id', currentUser.id);
+    } catch(e) {
+      console.warn('Gagal simpan profil ke Supabase:', e);
+    }
+  }
+
+  closeEditProfileModal();
+  updateUIForActiveUser();
+  showToast('Profil berhasil diperbarui! ✨', 'check_circle');
+}
+
+// --- AGENDA & DEVICE INTERNAL CALENDAR INTEGRATION ---
+function exportAgendaToDeviceCalendar(title, dateStr, timeStr, notes = '') {
+  if (!title || !dateStr || !timeStr) return;
+  
+  const startDate = new Date(`${dateStr}T${timeStr}:00`);
+  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour duration
+
+  const formatICSDate = (date) => {
+    return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  };
+
+  const icsLines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Octoleven//Couple App//ID',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `SUMMARY:${title.replace(/\n/g, ' ')}`,
+    `DESCRIPTION:${(notes || 'Agenda kencan bersama pasangan tercinta ❤️ (Octoleven)').replace(/\n/g, ' ')}`,
+    `DTSTART:${formatICSDate(startDate)}`,
+    `DTEND:${formatICSDate(endDate)}`,
+    'STATUS:CONFIRMED',
+    'BEGIN:VALARM',
+    'TRIGGER:-PT15M',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Pengingat Agenda Pasangan',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ];
+
+  const icsData = icsLines.join('\r\n');
+  const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+  const downloadUrl = URL.createObjectURL(blob);
+  
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.setAttribute('download', `${title.replace(/[^a-zA-Z0-9]/g, '_')}_agenda.ics`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(downloadUrl), 3000);
+
+  // Google Calendar intent fallback
+  const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatICSDate(startDate)}/${formatICSDate(endDate)}&details=${encodeURIComponent('Agenda kencan bersama pasangan ❤️ (Octoleven)')}`;
+
+  return { gCalUrl, icsData };
+}
+
 function openAgendaModal() {
   const modal = document.getElementById('agendaModal');
   const modalContent = document.getElementById('agendaModalContent');
@@ -1665,39 +2949,38 @@ async function submitAgenda() {
   const title = document.getElementById('agendaTitleInput').value.trim();
   const dateStr = document.getElementById('agendaDateInput').value;
   const timeStr = document.getElementById('agendaTimeInput').value;
+  const syncCalendarCheckbox = document.getElementById('agendaSyncDeviceCalendar');
 
   if (!title || !dateStr || !timeStr) {
-    alert('Mohon lengkapi semua kolom agenda!');
+    showToast('Mohon lengkapi semua kolom agenda!', 'error');
     return;
   }
 
   const scheduleDate = new Date(`${dateStr}T${timeStr}:00`);
   if (scheduleDate < new Date()) {
-    alert('Waktu agenda tidak boleh di masa lalu!');
+    showToast('Waktu agenda tidak boleh di masa lalu!', 'error');
     return;
   }
 
   const supabase = getSupabase();
-  if (!supabase || !currentUser) return;
 
   try {
     // Simpan ke DB members
-    const { error } = await supabase
-      .from('members')
-      .update({
-        next_date_label: title,
-        next_date_time: scheduleDate.toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', currentUser.id);
-
-    if (error) throw error;
+    if (supabase && currentUser) {
+      await supabase
+        .from('members')
+        .update({
+          next_date_label: title,
+          next_date_time: scheduleDate.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentUser.id);
+    }
 
     // Set Local Notification via Capacitor jika tersedia
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
       const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
       
-      // Minta izin
       let permStatus = await LocalNotifications.checkPermissions();
       if (permStatus.display !== 'granted') {
         permStatus = await LocalNotifications.requestPermissions();
@@ -1718,34 +3001,42 @@ async function submitAgenda() {
             }
           ]
         });
-        console.log('Notifikasi lokal berhasil dijadwalkan!');
       }
+    }
+
+    // Integrasi Kalender Internal HP (.ics & Intent)
+    if (syncCalendarCheckbox && syncCalendarCheckbox.checked) {
+      exportAgendaToDeviceCalendar(title, dateStr, timeStr);
+      showToast('Agenda diekspor ke Kalender HP! 📅', 'event_available');
     }
 
     closeAgendaModal();
     
     // Update Lokal & UI
-    coupleData.users[currentUser.id].nextDateLabel = title;
-    coupleData.users[currentUser.id].nextDateTime = scheduleDate.toISOString();
+    if (currentUser && coupleData.users[currentUser.id]) {
+      coupleData.users[currentUser.id].nextDateLabel = title;
+      coupleData.users[currentUser.id].nextDateTime = scheduleDate.toISOString();
+    }
     
     // Kirim notifikasi agenda
-    sendPushNotification('Agenda Baru Pasangan! 📅', `${currentUser.name} akan ${title} pada ${scheduleDate.toLocaleString('id-ID')}`, { event: 'agenda' });
+    sendPushNotification('Agenda Baru Pasangan! 📅', `${currentUser?.name || 'Pasangan'} akan ${title} pada ${scheduleDate.toLocaleString('id-ID')}`, { event: 'agenda' });
 
-    updateUIForActiveUser(); // ini tidak meng-update text di index.html, mari kita perbarui
+    updateUIForActiveUser();
     
     // Manual Update Text di UI (Bento box)
     const agendaTitleEls = document.querySelectorAll('h4.text-on-tertiary-container');
     agendaTitleEls.forEach(el => {
        if(el.innerText === 'Agenda Terdekat' || el.innerText.includes('Agenda')) {
            el.innerText = title;
-           el.nextElementSibling.innerText = scheduleDate.toLocaleString('id-ID');
+           if (el.nextElementSibling) el.nextElementSibling.innerText = scheduleDate.toLocaleString('id-ID');
        }
     });
 
-    alert('Agenda berhasil disimpan dan Alarm terpasang!');
+    triggerConfetti();
+    showToast('Agenda berhasil disimpan & disinkronkan!', 'check_circle');
   } catch (error) {
     console.error('Gagal menyimpan agenda:', error);
-    alert('Terjadi kesalahan saat menyimpan agenda.');
+    showToast('Terjadi kesalahan saat menyimpan agenda.', 'error');
   }
 }
 
@@ -1755,6 +3046,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderFeed('all');
   updateSimulatedWidget();
   updateStickerButtons();
+  updateStreakUI();
+  checkFlameReminderOnAppOpen();
 
   setInterval(() => {
     const clockEl = document.getElementById('androidClock');
@@ -1769,8 +3062,9 @@ document.addEventListener('DOMContentLoaded', () => {
 window.requestPinWidget = async function() {
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.WidgetPlugin) {
     try {
-      await window.Capacitor.Plugins.WidgetPlugin.pinWidget();
-      showToast('Berhasil memasang widget!', 'add_to_home_screen');
+      await window.Capacitor.Plugins.WidgetPlugin.pinWidget({ widgetType: widgetSize });
+      triggerConfetti();
+      showToast('Berhasil meminta pasang widget ke Home Screen!', 'add_to_home_screen');
     } catch (e) {
       showToast('Gagal: ' + (e.message || ''), 'error');
     }
@@ -1778,3 +3072,4 @@ window.requestPinWidget = async function() {
     showToast('Fitur ini hanya tersedia di HP Android.', 'warning');
   }
 };
+

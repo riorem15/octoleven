@@ -2,10 +2,6 @@
   "appId": "com.octoleven.app",
   "appName": "Octoleven PAP",
   "webDir": "www",
-  "server": {
-    "url": "https://belajar-nine-sepia.vercel.app",
-    "cleartext": true
-  },
   "plugins": {
     "StatusBar": {
       "overlaysWebView": false

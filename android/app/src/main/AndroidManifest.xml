@@ -67,12 +67,52 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/pap_widget_info_square" />
         </receiver>
+
+        <receiver android:name=".PapWidgetPolaroid" android:exported="true" android:label="Octoleven 2x2 Polaroid">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pap_widget_info_polaroid" />
+        </receiver>
+
+        <receiver android:name=".PapWidgetKangen" android:exported="true" android:label="Octoleven 2x2 Kangen dan Mood">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pap_widget_info_kangen" />
+        </receiver>
+
+        <receiver android:name=".PapWidgetCountdown" android:exported="true" android:label="Octoleven 4x2 Hari Jadian">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pap_widget_info_countdown" />
+        </receiver>
+
+        <!-- Firebase Messaging Service for Background Push Notifications & Widget Update -->
+        <service
+            android:name=".OctoMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />

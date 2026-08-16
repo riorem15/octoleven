@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg_neo"
+    android:padding="8dp">
+
+    <!-- Top Row: Avatar & Status -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="6dp">
+
+        <ImageView
+            android:id="@+id/widget_image"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:scaleType="centerCrop"
+            android:background="@drawable/widget_bg_rounded"
+            android:contentDescription="Avatar" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="6dp">
+
+            <TextView
+                android:id="@+id/widget_sender_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#25181A"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:text="Pasangan ❤️" />
+
+            <TextView
+                android:id="@+id/widget_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#73777F"
+                android:textSize="9sp"
+                android:text="Baru saja" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_mood_emoji"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:text="🥰" />
+    </LinearLayout>
+
+    <!-- Center: Kangen Counter Badge -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:background="#FFF0F1"
+        android:gravity="center"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/widget_caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#AD2C4E"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:text="Panggilan Rindu" />
+
+        <TextView
+            android:id="@+id/widget_kangen_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#AD2C4E"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:text="❤️ 12x" />
+    </LinearLayout>
+
+    <!-- Bottom: Action Button Label -->
+    <TextView
+        android:id="@+id/widget_tag"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/badge_solid_pink"
+        android:paddingVertical="3dp"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:text="Kirim Rindu 🥺" />
+
+</LinearLayout>

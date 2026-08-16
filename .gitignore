@@ -6,3 +6,5 @@ android/app/build/
 android/.gradle/
 *.log
 .DS_Store
+*.apk
+octoleven_logo

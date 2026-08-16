@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@drawable/widget_bg_neo"
+    android:padding="8dp">
+
+    <!-- Left: Photo Frame -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="@drawable/widget_bg_rounded">
+
+        <ImageView
+            android:id="@+id/widget_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="Couple Photo" />
+
+        <TextView
+            android:id="@+id/widget_tag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="4dp"
+            android:background="@drawable/badge_yellow"
+            android:paddingHorizontal="5dp"
+            android:paddingVertical="2dp"
+            android:textColor="#25181A"
+            android:textSize="8sp"
+            android:textStyle="bold"
+            android:text="Together 💕" />
+    </FrameLayout>
+
+    <!-- Right: Days Count & Info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1.3"
+        android:orientation="vertical"
+        android:paddingStart="8dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_sender_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#AD2C4E"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:text="Kisah Cinta Kita ❤️" />
+
+        <TextView
+            android:id="@+id/widget_days_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#25181A"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:text="365 Hari" />
+
+        <TextView
+            android:id="@+id/widget_caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#73777F"
+            android:textSize="9sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="Malam Minggu Nonton 🍿" />
+
+        <TextView
+            android:id="@+id/widget_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#AD2C4E"
+            android:textSize="8sp"
+            android:textStyle="bold"
+            android:text="Buka Octoleven ✨" />
+    </LinearLayout>
+
+</LinearLayout>
