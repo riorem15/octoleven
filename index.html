@@ -189,30 +189,9 @@
           <span class="text-2xl animate-bounce">✨</span>
         </div>
         
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="font-body-md text-xs font-bold text-on-surface-variant bg-surface-container inline-flex items-center gap-1.5 px-3 py-1 rounded-full neo-border-sm">
-            <span class="material-symbols-outlined text-sm text-primary">favorite</span>
-            <span id="daysTogetherText">Pasangan Baru • 0 hari bersama</span>
-          </span>
-        </div>
+
       </div>
 
-      <!-- Flame Streak Banner (Beranda) -->
-      <div onclick="openStreakInfoModal()" id="homeStreakBanner" class="bg-gradient-to-r from-amber-50 to-orange-100 neo-border rounded-xl p-3 neo-shadow-sm flex items-center justify-between cursor-pointer active-press hover:bg-orange-200 transition-all">
-        <div class="flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center neo-border-sm text-2xl flame-active shadow-sm" id="homeStreakFlameIcon">
-            🔥
-          </div>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <span id="homeStreakTitle" class="font-headline-md text-xs font-black text-on-background">Api Streak: 0 Hari</span>
-              <span id="homeStreakBadge" class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-orange-200 text-orange-900 neo-border-sm">Belum Hidup</span>
-            </div>
-            <p id="homeStreakSubtitle" class="text-[11px] text-on-surface-variant font-medium">Kirim PAP hari ini untuk mengaktifkan apinya!</p>
-          </div>
-        </div>
-        <span class="material-symbols-outlined text-orange-800 text-base">chevron_right</span>
-      </div>
 
       <!-- Hero Card: PAP HARI INI -->
       <div class="bg-primary-container neo-border rounded-2xl p-5 neo-shadow relative overflow-hidden flex flex-col items-center text-center space-y-3">
@@ -606,66 +585,7 @@
         <span class="material-symbols-outlined text-on-surface-variant text-lg">chevron_right</span>
       </div>
 
-      <!-- Pairing Management (Collapsible Clean Section) -->
-      <details class="bg-surface-container rounded-2xl p-4 neo-border neo-shadow group">
-        <summary class="font-label-bold text-xs font-black text-on-background flex justify-between items-center cursor-pointer list-none">
-          <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-sm text-primary">link</span>
-            <span>Kode Undangan & Pengaturan Akun</span>
-          </div>
-          <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
-        </summary>
 
-        <div class="mt-3 pt-3 border-t border-outline-variant/40 space-y-3">
-          <div class="flex justify-between items-center bg-surface p-2.5 rounded-xl neo-border-sm">
-            <span class="text-xs font-bold text-on-surface-variant">Kode Undangan:</span>
-            <span id="inviteCodeDisplay" class="font-mono font-extrabold text-sm tracking-wider text-primary">OCTO-7K92</span>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="copyInviteCode()" class="flex-1 py-2 bg-surface text-on-background neo-border-sm rounded-lg text-xs font-bold flex items-center justify-center gap-1 active-press">
-              <span class="material-symbols-outlined text-sm">content_copy</span> Salin
-            </button>
-            <button onclick="shareInviteCode()" class="flex-1 py-2 bg-primary-container text-white neo-border-sm rounded-lg text-xs font-bold flex items-center justify-center gap-1 active-press">
-              <span class="material-symbols-outlined text-sm">share</span> Bagikan
-            </button>
-          </div>
-          <div class="pt-2">
-            <label class="text-[11px] font-bold text-on-surface-variant">Gabung dengan kode baru:</label>
-            <div class="flex gap-2 mt-1">
-              <input type="text" id="joinPairCodeInput" placeholder="OCTO-XXXX" class="flex-1 bg-surface rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase neo-input" maxlength="10"/>
-              <button onclick="joinCoupleWithCode()" class="px-4 py-2 bg-secondary-container text-on-secondary-container font-bold text-xs rounded-xl neo-border-sm active-press">
-                Gabung
-              </button>
-            </div>
-          </div>
-          <div class="pt-3 border-t border-outline-variant/40 flex justify-between items-center">
-            <span class="text-[11px] font-medium text-on-surface-variant">Ingin ganti akun perangkat ini?</span>
-            <button onclick="logoutAccount()" class="px-3 py-1.5 bg-red-50 text-red-700 font-bold text-[11px] rounded-lg neo-border-sm active-press hover:bg-red-100">
-              Keluar Akun
-            </button>
-          </div>
-        </div>
-      </details>
-
-      <!-- Push Notification Status Card -->
-      <div class="bg-surface rounded-2xl p-3.5 neo-border neo-shadow flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-primary-container text-white flex items-center justify-center neo-border-sm text-sm">
-            <span class="material-symbols-outlined text-sm">notifications_active</span>
-          </div>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <h3 class="text-xs font-black text-on-background">Notifikasi Pasangan</h3>
-              <span id="fcmStatusBadge" class="text-[10px] font-bold px-2 py-0.2 rounded-full neo-border-sm bg-green-100 text-green-800">Aktif ✅</span>
-            </div>
-            <p class="text-[10px] text-on-surface-variant">PAP, Panggilan Rindu, Komentar & Agenda</p>
-          </div>
-        </div>
-        <button onclick="requestPushPermissionsAndRegister()" class="px-3 py-1.5 bg-surface-container text-on-background neo-border-sm rounded-xl font-bold text-[11px] flex items-center gap-1 active-press hover:bg-surface-container-high" title="Perbarui Izin">
-          <span class="material-symbols-outlined text-xs">refresh</span>
-          <span>Perbarui</span>
-        </button>
-      </div>
 
     </section>
 
@@ -723,10 +643,7 @@
           <span class="material-symbols-outlined text-sm">photo_camera</span>
           <span>📸 Foto</span>
         </button>
-        <button type="button" onclick="setPapMode('video')" id="btnModeVideo" class="py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 text-on-surface-variant hover:bg-surface/50 transition-all">
-          <span class="material-symbols-outlined text-sm text-red-500">videocam</span>
-          <span>🎥 Video (Maks. 10s)</span>
-        </button>
+
       </div>
 
       <!-- Media Capture / Selection Area -->
@@ -738,22 +655,7 @@
         <!-- Image Preview Element -->
         <img id="imagePreview" class="w-full h-full object-cover hidden" alt="Pratinjau Foto"/>
 
-        <!-- Video Playback Preview Element (Looping with Sound) -->
-        <video id="videoPlaybackPreview" class="w-full h-full object-cover hidden" playsinline loop autoplay muted></video>
-        
-        <!-- Canvas for Capturing Frame & Video Thumbnail -->
-        <canvas id="captureCanvas" class="hidden"></canvas>
 
-        <!-- Live Video Recording Indicator (0 to 10s) -->
-        <div id="videoRecordIndicator" class="absolute top-3 right-3 bg-red-600/90 text-white text-[11px] font-mono font-black px-3 py-1 rounded-full neo-border-sm hidden items-center gap-1.5 z-30 shadow-md">
-          <span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
-          <span id="recordTimerText">REC 00:00 / 00:10</span>
-        </div>
-
-        <!-- Video Sound Toggle Overlay Button on Preview -->
-        <button type="button" id="videoSoundToggleBtn" onclick="togglePreviewSound()" class="absolute bottom-3 left-3 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center text-xs neo-border-sm hidden z-20" title="Aktifkan/Matikan Suara">
-          <span id="videoSoundIcon" class="material-symbols-outlined text-sm">volume_off</span>
-        </button>
 
         <!-- Initial Placeholder State -->
         <div id="cameraPlaceholder" class="flex flex-col items-center gap-2.5 p-4 text-center">
@@ -774,7 +676,7 @@
             <label class="px-3.5 py-2 bg-secondary-container text-on-secondary-container rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1 active-press cursor-pointer">
               <span class="material-symbols-outlined text-sm">upload_file</span>
               <span>Pilih Galeri</span>
-              <input type="file" id="filePickerInput" accept="image/*,video/*" class="hidden" onchange="handleFileSelected(event)"/>
+              <input type="file" id="filePickerInput" accept="image/*" class="hidden" onchange="handleFileSelected(event)"/>
             </label>
           </div>
 

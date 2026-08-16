@@ -290,7 +290,7 @@ async function fetchMomentsFromSupabase() {
         text: c.text
       }));
 
-      const isVideo = p.is_video || (p.video_url ? true : false) || (p.sticker && p.sticker.includes('🎥'));
+      const isVideo = false;
       return {
         id: p.id,
         coupleId: p.couple_id,
@@ -408,19 +408,27 @@ async function triggerLocalNotification(title, body, imageUrl = null) {
   // 1. Capacitor Local Notifications (Android Native)
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
     try {
-      const notifObj = {
-        title: title,
-        body: body,
-        id: Math.floor(Math.random() * 1000000),
-        schedule: { at: new Date(Date.now() + 500) }
-      };
-      if (imageUrl) {
-        notifObj.largeBody = body;
-        notifObj.summaryText = 'Octoleven Couple PAP';
+      const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+      let permStatus = await LocalNotifications.checkPermissions();
+      if (permStatus.display !== 'granted') {
+        permStatus = await LocalNotifications.requestPermissions();
       }
-      await window.Capacitor.Plugins.LocalNotifications.schedule({
-        notifications: [notifObj]
-      });
+
+      if (permStatus.display === 'granted') {
+        const notifObj = {
+          title: title,
+          body: body,
+          id: Math.floor(Math.random() * 1000000),
+          schedule: { at: new Date(Date.now() + 500) }
+        };
+        if (imageUrl) {
+          notifObj.largeBody = body;
+          notifObj.summaryText = 'Octoleven Couple PAP';
+        }
+        await LocalNotifications.schedule({
+          notifications: [notifObj]
+        });
+      }
     } catch (e) {
       console.warn('LocalNotifications schedule error:', e);
     }
@@ -886,7 +894,7 @@ function renderHomeView() {
     const rot = rotations[idx % rotations.length];
     const senderName = m.senderName || 'Pasangan';
     const heartCount = m.reactions?.['❤️'] || 0;
-    const isVideo = m.isVideo || m.is_video || m.videoUrl || m.video_url;
+    const isVideo = false;
 
     return `
       <div onclick="switchTab('feed')" class="w-32 h-44 shrink-0 bg-surface neo-border-sm rounded-xl p-2 snap-center relative transform ${rot} polaroid-card cursor-pointer flex flex-col justify-between">
@@ -961,7 +969,7 @@ function renderFeed(filter = 'all') {
     const cardBg = index % 2 === 0 ? 'bg-surface-container-highest' : 'bg-surface';
     const tilt = index % 3 === 1 ? '-rotate-1 hover:rotate-0' : (index % 3 === 2 ? 'rotate-1 hover:rotate-0' : '');
     const reactions = moment.reactions || { '❤️': 1, '🥹': 0, '😂': 0, '🔥': 0 };
-    const isVideo = moment.isVideo || moment.is_video || moment.videoUrl || moment.video_url;
+    const isVideo = false;
 
     return `
       <article class="${cardBg} rounded-2xl neo-border neo-shadow p-4 flex flex-col gap-3 relative transition-transform duration-200 ${tilt}">
@@ -1479,12 +1487,12 @@ async function startLiveCamera() {
 }
 
 // --- PAP MEDIA STATE (PHOTO & 10s VIDEO) ---
-let currentPapMode = 'photo'; // 'photo' | 'video'
+
 let mediaRecorder = null;
 let recordedVideoChunks = [];
-let currentCapturedVideoBlob = null;
-let currentCapturedVideoUrl = null;
-let videoThumbnailUrl = null;
+
+
+
 let recordTimerInterval = null;
 let recordDurationSeconds = 0;
 let isRecordingVideo = false;
@@ -1801,7 +1809,7 @@ function handleFileSelected(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  const isVideo = file.type.startsWith('video/');
+  const isVideo = false;
   currentMediaFile = file;
 
   const imgPreview = document.getElementById('imagePreview');
@@ -1914,7 +1922,7 @@ function updateStickerButtons() {
 
 // --- Submit New PAP (Photo or 10s Video) to Supabase Storage & Database ---
 async function submitNewPap() {
-  const isVideo = currentPapMode === 'video' && (currentCapturedVideoBlob || (currentMediaFile && currentMediaFile.type?.startsWith('video/')));
+  const isVideo = false;
   
   if (!isVideo && !currentCapturedImage && !currentMediaFile) {
     showToast('Pilih atau rekam PAP terlebih dahulu!', 'warning');
@@ -2060,30 +2068,6 @@ async function submitNewPap() {
   updateStreakUI();
   triggerConfetti();
   showToast(isVideo ? 'PAP Video 10s tersimpan! 🎥' : 'PAP Foto tersimpan! 📸', 'check_circle');
-}
-
-  // Fallback local persistence
-  const newMoment = {
-    id: `mom-${Date.now()}`,
-    coupleId: coupleData.id || 'couple-1',
-    senderId: currentUser?.id || 'local-user',
-    senderName: activeUser.name,
-    image: publicPhotoUrl,
-    caption: caption,
-    sticker: selectedSticker,
-    timestamp: new Date().toISOString(),
-    reactions: { '❤️': 1 },
-    comments: []
-  };
-  moments.unshift(newMoment);
-  saveData();
-  renderHomeView();
-  renderFeed(currentFilter);
-  updateSimulatedWidget();
-  triggerConfetti();
-  showToast('PAP tersimpan di perangkat! 💖', 'check_circle');
-
-  triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
 }
 
 // --- Mood Tracker Logic ---
@@ -2862,43 +2846,14 @@ function exportAgendaToDeviceCalendar(title, dateStr, timeStr, notes = '') {
     return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   };
 
-  const icsLines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Octoleven//Couple App//ID',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    `SUMMARY:${title.replace(/\n/g, ' ')}`,
-    `DESCRIPTION:${(notes || 'Agenda kencan bersama pasangan tercinta ❤️ (Octoleven)').replace(/\n/g, ' ')}`,
-    `DTSTART:${formatICSDate(startDate)}`,
-    `DTEND:${formatICSDate(endDate)}`,
-    'STATUS:CONFIRMED',
-    'BEGIN:VALARM',
-    'TRIGGER:-PT15M',
-    'ACTION:DISPLAY',
-    'DESCRIPTION:Pengingat Agenda Pasangan',
-    'END:VALARM',
-    'END:VEVENT',
-    'END:VCALENDAR'
-  ];
+  const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatICSDate(startDate)}/${formatICSDate(endDate)}&details=${encodeURIComponent(notes || 'Agenda kencan bersama pasangan ❤️ (Octoleven)')}`;
 
-  const icsData = icsLines.join('\r\n');
-  const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
-  const downloadUrl = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.href = downloadUrl;
-  link.setAttribute('download', `${title.replace(/[^a-zA-Z0-9]/g, '_')}_agenda.ics`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(downloadUrl), 3000);
-
-  // Google Calendar intent fallback
-  const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatICSDate(startDate)}/${formatICSDate(endDate)}&details=${encodeURIComponent('Agenda kencan bersama pasangan ❤️ (Octoleven)')}`;
-
-  return { gCalUrl, icsData };
+  // Use window.open with _system to prompt Android to open the default browser or Google Calendar app
+  if (window.Capacitor && window.Capacitor.Plugins) {
+    window.open(gCalUrl, '_system');
+  } else {
+    window.open(gCalUrl, '_blank');
+  }
 }
 
 function openAgendaModal() {
