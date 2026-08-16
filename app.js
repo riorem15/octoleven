@@ -1449,6 +1449,9 @@ function openPapModal() {
 
   updateStickerButtons();
   if (modal) modal.classList.remove('hidden');
+
+  // Automatically start in-app live camera viewfinder for seamless shooting
+  startLiveCamera();
 }
 
 function closePapModal() {
@@ -1457,76 +1460,13 @@ function closePapModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-// Universal Camera Trigger (Native Capacitor Plugin -> Web getUserMedia -> Camera Input Fallback)
+// In-App Live Camera Launcher
 async function takePapPhoto() {
-  // 1. Try Native Capacitor Camera Plugin (Android Native)
-  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) {
-    try {
-      const Camera = window.Capacitor.Plugins.Camera;
-      const photo = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: 'dataUrl',
-        source: 'CAMERA'
-      });
-
-      if (photo && photo.dataUrl) {
-        setCapturedPapImage(photo.dataUrl);
-        return;
-      }
-    } catch (capErr) {
-      console.warn('Native camera note:', capErr);
-      const errMsg = (capErr?.message || '').toLowerCase();
-      if (errMsg.includes('cancelled') || errMsg.includes('canceled') || errMsg.includes('user cancelled')) {
-        return;
-      }
-    }
-  }
-
-  // 2. Try In-Browser Web Live Camera (Viewfinder)
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    try {
-      await startLiveCamera();
-      return;
-    } catch (liveErr) {
-      console.warn('Live getUserMedia unavailable:', liveErr);
-    }
-  }
-
-  // 3. Resilient Fallback: Native Device Camera Input
-  const nativeCamInput = document.getElementById('nativeCameraInput') || document.getElementById('filePickerInput');
-  if (nativeCamInput) {
-    nativeCamInput.click();
-  }
+  await startLiveCamera();
 }
 
-// Universal Gallery Trigger
-async function choosePapFromGallery() {
-  // 1. Try Native Capacitor Gallery
-  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) {
-    try {
-      const Camera = window.Capacitor.Plugins.Camera;
-      const photo = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: 'dataUrl',
-        source: 'PHOTOS'
-      });
-
-      if (photo && photo.dataUrl) {
-        setCapturedPapImage(photo.dataUrl);
-        return;
-      }
-    } catch (galErr) {
-      console.warn('Native gallery note:', galErr);
-      const errMsg = (galErr?.message || '').toLowerCase();
-      if (errMsg.includes('cancelled') || errMsg.includes('canceled') || errMsg.includes('user cancelled')) {
-        return;
-      }
-    }
-  }
-
-  // 2. Fallback: File Picker Input
+// Gallery Trigger
+function choosePapFromGallery() {
   const fileInput = document.getElementById('filePickerInput');
   if (fileInput) fileInput.click();
 }
@@ -1541,7 +1481,7 @@ function retakePapPhoto() {
   const retakeOverlay = document.getElementById('retakePhotoOverlay');
   const controls = document.getElementById('activeCameraControls');
 
-  if (placeholder) placeholder.classList.remove('hidden');
+  if (placeholder) placeholder.classList.add('hidden');
   if (imgPreview) {
     imgPreview.src = '';
     imgPreview.classList.add('hidden');
@@ -1550,7 +1490,7 @@ function retakePapPhoto() {
   if (retakeOverlay) retakeOverlay.classList.add('hidden');
   if (controls) controls.classList.add('hidden');
 
-  stopLiveCamera();
+  startLiveCamera();
 }
 
 function setCapturedPapImage(dataUrl) {
@@ -1584,7 +1524,7 @@ function setCapturedPapImage(dataUrl) {
 
   playSound('snap');
   vibrate(40);
-  showToast('Foto PAP siap dikirim! 📸✨', 'check_circle');
+  showToast('Foto PAP berhasil diambil! 📸✨', 'check_circle');
 }
 
 async function startLiveCamera() {
@@ -1600,22 +1540,32 @@ async function startLiveCamera() {
   if (badgeOverlay) badgeOverlay.classList.add('hidden');
   if (retakeOverlay) retakeOverlay.classList.add('hidden');
 
-  const constraints = {
-    video: {
-      facingMode: currentFacingMode,
-      width: { ideal: 1280 },
-      height: { ideal: 1280 }
-    },
-    audio: false
-  };
+  try {
+    const constraints = {
+      video: {
+        facingMode: currentFacingMode,
+        width: { ideal: 1280 },
+        height: { ideal: 1280 }
+      },
+      audio: false
+    };
 
-  mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-  if (videoEl) {
-    videoEl.srcObject = mediaStream;
-    videoEl.classList.remove('hidden');
-    videoEl.play();
+    if (mediaStream) {
+      stopLiveCamera();
+    }
+
+    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+    if (videoEl) {
+      videoEl.srcObject = mediaStream;
+      videoEl.classList.remove('hidden');
+      videoEl.play();
+    }
+    if (controls) controls.classList.remove('hidden');
+  } catch (err) {
+    console.warn('In-app camera notice:', err);
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (controls) controls.classList.add('hidden');
   }
-  if (controls) controls.classList.remove('hidden');
 }
 
 function stopLiveCamera() {
@@ -1713,48 +1663,80 @@ function updateStickerButtons() {
 // --- Submit New PAP Photo to Supabase Storage & Database ---
 async function submitNewPap() {
   if (!currentCapturedImage && !currentMediaFile) {
-    showToast('Ambil atau pilih foto PAP terlebih dahulu! 📸', 'warning');
+    showToast('Ambil foto langsung dengan kamera atau pilih dari galeri! 📸', 'warning');
     vibrate(60);
     return;
   }
 
   const captionInput = document.getElementById('papCaptionInput');
   const caption = captionInput?.value.trim() || 'PAP hari ini buat kamu tersayang! ❤️';
-  const activeUser = coupleData.users[coupleData.activeUser] || { name: 'Pengguna' };
+  const activeUser = coupleData.users[coupleData.activeUser] || { name: currentUser?.name || 'Rio' };
 
   closePapModal();
   playSound('heart');
   vibrate([40, 60, 40]);
-  showToast('Mengompres & mengunggah foto... 📸🚀', 'cloud_upload');
+  showToast('Mengompres & mengunggah foto ke Supabase... 📸🚀', 'cloud_upload');
 
   let publicThumbUrl = currentCapturedImage || SAMPLE_PRESET_PHOTOS[0];
 
+  // 1. Instantly update local moments so the photo displays immediately with 0 lag
+  const tempId = 'pap-' + Date.now();
+  const newMoment = {
+    id: tempId,
+    coupleId: coupleData.id,
+    image: currentCapturedImage || SAMPLE_PRESET_PHOTOS[0],
+    videoUrl: null,
+    isVideo: false,
+    senderId: currentUser?.id || coupleData.activeUser,
+    senderName: activeUser.name,
+    senderAvatar: activeUser.avatar || '',
+    timeAgo: 'Baru saja',
+    exactTime: new Date().toLocaleTimeString('id-ID'),
+    caption: caption,
+    sticker: selectedSticker,
+    comments: [],
+    reactions: { '❤️': 1 }
+  };
+
+  moments.unshift(newMoment);
+  saveData();
+  renderFeed(currentFilter);
+  renderHomeView();
+  updateStreakUI();
+  triggerConfetti();
+
+  // 2. Upload to Supabase Storage & Database in background
   if (isSupabaseReady() && currentUser) {
     const supabase = getSupabase();
     try {
-      let fileSource = currentMediaFile || currentCapturedImage;
-      let compressedResult = await compressImage(fileSource, 1280, 1280, 0.85);
-      publicThumbUrl = compressedResult.dataUrl || currentCapturedImage;
+      let fileToUpload = null;
 
-      let fileToUpload = compressedResult.blob;
-      if (!fileToUpload && publicThumbUrl?.startsWith('data:')) {
-        fileToUpload = dataURItoBlob(publicThumbUrl);
+      if (currentCapturedImage && currentCapturedImage.startsWith('data:')) {
+        fileToUpload = dataURItoBlob(currentCapturedImage);
+      } else if (currentMediaFile) {
+        fileToUpload = currentMediaFile;
       }
 
       if (fileToUpload) {
         const fileExt = 'jpg';
-        const fileName = `${coupleData.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const fileName = `${coupleData.id || 'default'}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
         const { error: uploadError } = await supabase.storage
           .from('pap-photos')
-          .upload(fileName, fileToUpload, { contentType: 'image/jpeg', upsert: true });
+          .upload(fileName, fileToUpload, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
 
         if (!uploadError) {
           const { data: publicUrlData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
           if (publicUrlData?.publicUrl) {
             publicThumbUrl = publicUrlData.publicUrl;
+            newMoment.image = publicThumbUrl;
+            saveData();
           }
         } else {
-          console.warn('Storage upload error:', uploadError);
+          console.warn('Storage upload notice:', uploadError);
         }
       }
 
@@ -1772,12 +1754,13 @@ async function submitNewPap() {
         like_count: 1
       });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.warn('Supabase DB notice:', dbError);
+      } else {
+        showToast('Foto PAP berhasil tersimpan di Supabase! 📸💖', 'check_circle');
+      }
 
-      triggerConfetti();
-      showToast('PAP Foto terkirim! 📸💖', 'check_circle');
-
-      // Send Push Notification & Update Android Widgets
+      // Send Push Notification & Update Android Home Screen Widgets
       sendPushNotification('PAP Baru Masuk! 📸', `${activeUser.name} ngirim PAP spesial nih, yuk intip!`, {
         event: 'new_pap',
         widget_update: 'true',
@@ -1788,37 +1771,15 @@ async function submitNewPap() {
         tagText: selectedSticker + ' ✨'
       });
 
-      fetchMomentsFromSupabase();
-      return;
+      // Fetch fresh moments from Supabase
+      setTimeout(() => {
+        fetchMomentsFromSupabase();
+      }, 500);
+
     } catch (err) {
-      console.warn('Supabase Error saat unggah PAP:', err.message);
+      console.warn('Supabase upload notice:', err);
     }
   }
-
-  // Fallback offline / local moment
-  const newMoment = {
-    id: 'local-' + Date.now(),
-    image: publicThumbUrl || currentCapturedImage || SAMPLE_PRESET_PHOTOS[0],
-    videoUrl: isVideo ? currentCapturedVideoUrl : null,
-    isVideo: isVideo,
-    senderId: currentUser?.id || coupleData.activeUser,
-    senderName: activeUser.name,
-    senderAvatar: activeUser.avatar || '',
-    timeAgo: 'Baru saja',
-    exactTime: new Date().toLocaleTimeString('id-ID'),
-    caption: caption,
-    sticker: selectedSticker + (isVideo ? ' 🎥' : ''),
-    comments: [],
-    reactions: { '❤️': 1 }
-  };
-
-  moments.unshift(newMoment);
-  saveData();
-  renderFeed(currentFilter);
-  renderHomeView();
-  updateStreakUI();
-  triggerConfetti();
-  showToast(isVideo ? 'PAP Video 10s tersimpan! 🎥' : 'PAP Foto tersimpan! 📸', 'check_circle');
 }
 
 // --- Mood Tracker Logic ---
