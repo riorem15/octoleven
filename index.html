@@ -92,7 +92,41 @@
 
 <body class="bg-background text-on-background min-h-screen flex flex-col font-body-md selection:bg-primary-container selection:text-on-primary-container pb-28">
 
-  <!-- ==================== MAIN APP (Direct Access) ==================== -->
+  <!-- ==================== ONE-TIME LOGIN SCREEN OVERLAY ==================== -->
+  <div id="loginScreen" class="fixed inset-0 z-[100] bg-surface flex flex-col items-center justify-center p-6 text-center animate-fadeIn overflow-y-auto hidden">
+    <div class="max-w-xs w-full space-y-5 my-auto">
+      <div class="w-20 h-20 mx-auto bg-primary-container rounded-3xl neo-border neo-shadow flex items-center justify-center rotate-3">
+        <span class="text-4xl">❤️</span>
+      </div>
+      <div>
+        <h1 class="font-display-lg text-3xl text-primary font-extrabold tracking-tight">Octoleven</h1>
+        <p class="text-xs text-on-surface-variant font-medium mt-1">Aplikasi Privat PAP Pasangan Real-Time</p>
+      </div>
+
+      <!-- Auth Form Container -->
+      <div class="bg-surface-container neo-border neo-shadow rounded-2xl p-4 text-left space-y-3">
+        <div class="text-center pb-2 mb-2 border-b border-outline-variant/40">
+          <span class="font-label-bold text-xs font-bold text-primary">Login Sekali untuk Selamanya</span>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] font-bold text-on-background">Username (Nama Anda)</label>
+          <input type="text" id="authUsernameInput" placeholder="Contoh: Rio / Nindya" autocomplete="username" class="w-full bg-surface rounded-xl p-2.5 text-xs neo-input font-medium" onkeydown="if(event.key==='Enter') handleLoginSubmit()"/>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] font-bold text-on-background">Kata Sandi</label>
+          <input type="password" id="authPasswordInput" placeholder="••••••••" autocomplete="current-password" class="w-full bg-surface rounded-xl p-2.5 text-xs neo-input font-medium" onkeydown="if(event.key==='Enter') handleLoginSubmit()"/>
+        </div>
+
+        <button type="button" id="authSubmitBtn" onclick="handleLoginSubmit()" class="w-full py-3 bg-primary-container text-white neo-border rounded-xl font-label-bold text-xs font-bold neo-shadow-sm active-press mt-2 hover:bg-primary transition-colors">
+          Masuk ke Ruang Pasangan ❤️
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APP ==================== -->
   <div id="mainAppContent" class="flex flex-col flex-1">
 
   <div id="toastNotification" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 -translate-y-4 transition-all duration-300 mt-[env(safe-area-inset-top,0px)]">
@@ -507,15 +541,6 @@
 
       </div>
 
-      <!-- Device Profile Switcher -->
-      <div class="bg-surface rounded-2xl p-3 neo-border neo-shadow flex items-center justify-between">
-        <span class="text-xs font-bold text-on-surface-variant">Profil di HP ini:</span>
-        <div class="flex gap-2">
-          <button type="button" onclick="switchDeviceUser('user-rio-123')" id="btnProfileRio" class="px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-primary-container text-white active-press transition-all">🧑 Rio</button>
-          <button type="button" onclick="switchDeviceUser('user-nindya-123')" id="btnProfileNindya" class="px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-surface text-on-background active-press transition-all">👩 Nindya</button>
-        </div>
-      </div>
-
       <!-- Tanggal Jadian & Hari Bersama Card (Fitur Baru) -->
       <div class="bg-surface rounded-2xl p-4 neo-border neo-shadow space-y-3">
         <div class="flex items-center justify-between">
@@ -586,7 +611,7 @@
         <summary class="font-label-bold text-xs font-black text-on-background flex justify-between items-center cursor-pointer list-none">
           <div class="flex items-center gap-2">
             <span class="material-symbols-outlined text-sm text-primary">link</span>
-            <span>Kode Undangan & Sambung Pasangan Lain</span>
+            <span>Kode Undangan & Pengaturan Akun</span>
           </div>
           <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
         </summary>
@@ -612,6 +637,12 @@
                 Gabung
               </button>
             </div>
+          </div>
+          <div class="pt-3 border-t border-outline-variant/40 flex justify-between items-center">
+            <span class="text-[11px] font-medium text-on-surface-variant">Ingin ganti akun perangkat ini?</span>
+            <button onclick="logoutAccount()" class="px-3 py-1.5 bg-red-50 text-red-700 font-bold text-[11px] rounded-lg neo-border-sm active-press hover:bg-red-100">
+              Keluar Akun
+            </button>
           </div>
         </div>
       </details>

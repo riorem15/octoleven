@@ -505,59 +505,114 @@ async function handleAuthSession(session) {
   }
 }
 
-// --- Direct Seamless Access Initialization ---
+// --- Permanent One-Time Authentication & Session Gating ---
 function initSupabaseAuth() {
   if (supabaseAuthInitialized) return;
   supabaseAuthInitialized = true;
+
+  const loginScreen = document.getElementById('loginScreen');
+  const mainApp = document.getElementById('mainAppContent');
 
   const savedUser = localStorage.getItem('octo_permanent_user');
   if (savedUser) {
     try {
       currentUser = JSON.parse(savedUser);
-    } catch(e) {}
+      if (currentUser && currentUser.id) {
+        coupleData.activeUser = currentUser.id;
+        handleAuthSession({ user: currentUser });
+        return;
+      }
+    } catch(e) {
+      console.warn('Error parsing saved session:', e);
+    }
   }
 
-  // Default to Rio on fresh device
-  if (!currentUser) {
-    currentUser = { 
+  // Fresh installation: show one-time login screen
+  currentUser = null;
+  if (loginScreen) {
+    loginScreen.classList.remove('hidden');
+    loginScreen.classList.add('flex');
+  }
+  if (mainApp) {
+    mainApp.classList.add('hidden');
+    mainApp.classList.remove('flex');
+  }
+}
+
+window.handleLoginSubmit = function() {
+  const userEl = document.getElementById('authUsernameInput');
+  const passEl = document.getElementById('authPasswordInput');
+
+  const rawUsername = userEl?.value || '';
+  const username = rawUsername.trim().toLowerCase();
+  const password = (passEl?.value || '').trim();
+
+  if (!username) {
+    showToast('Masukkan Username atau Nama kamu!', 'warning');
+    vibrate(40);
+    return;
+  }
+
+  let user = null;
+  // Rio Account
+  if (username.includes('rio') || username.includes('refki') || username.includes('maulana') || username === 'rio') {
+    user = { 
       id: 'user-rio-123', 
       email: 'rio@octoleven.local', 
       user_metadata: { full_name: 'Rio Refki Maulana' } 
     };
-    localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
-  }
-
-  coupleData.activeUser = currentUser.id;
-  handleAuthSession({ user: currentUser });
-}
-
-window.switchDeviceUser = function(userId) {
-  if (userId === 'user-nindya-123') {
-    currentUser = { 
+  } 
+  // Nindya Account
+  else if (username.includes('nindya') || username.includes('nindi') || username.includes('rachmawati') || username.includes('nidia') || username === 'nindya') {
+    user = { 
       id: 'user-nindya-123', 
       email: 'nindya@octoleven.local', 
       user_metadata: { full_name: 'Nindya Rachmawati' } 
     };
-  } else {
-    currentUser = { 
-      id: 'user-rio-123', 
-      email: 'rio@octoleven.local', 
-      user_metadata: { full_name: 'Rio Refki Maulana' } 
+  } 
+  // Custom Name Account
+  else {
+    const cleanId = 'user-' + username.replace(/[^a-z0-9]/g, '');
+    user = { 
+      id: cleanId, 
+      email: `${cleanId}@octoleven.local`, 
+      user_metadata: { full_name: rawUsername.trim() } 
     };
   }
-  
-  localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
-  coupleData.activeUser = currentUser.id;
-  
-  showToast(`Profil beralih ke ${currentUser.user_metadata.full_name}! ❤️`, 'favorite');
+
+  // Save session permanently to localStorage so user is NEVER prompted to login again
+  currentUser = user;
+  coupleData.activeUser = user.id;
+  localStorage.setItem('octo_permanent_user', JSON.stringify(user));
+
   playSound('heart');
-  vibrate(30);
-  
+  vibrate([50, 100, 50]);
+  showToast(`Selamat datang ${user.user_metadata.full_name}! ❤️`, 'favorite');
+
   handleAuthSession({ user: currentUser });
 };
 
-window.quickLogin = function(profile) {
-  window.switchDeviceUser(profile === 'nindya' ? 'user-nindya-123' : 'user-rio-123');
+window.logoutAccount = function() {
+  localStorage.removeItem('octo_permanent_user');
+  currentUser = null;
+
+  const loginScreen = document.getElementById('loginScreen');
+  const mainApp = document.getElementById('mainAppContent');
+
+  if (loginScreen) {
+    loginScreen.classList.remove('hidden');
+    loginScreen.classList.add('flex');
+    const userEl = document.getElementById('authUsernameInput');
+    const passEl = document.getElementById('authPasswordInput');
+    if (userEl) userEl.value = '';
+    if (passEl) passEl.value = '';
+  }
+  if (mainApp) {
+    mainApp.classList.add('hidden');
+    mainApp.classList.remove('flex');
+  }
+
+  showToast('Akun berhasil keluar.', 'logout');
 };
 
 // Listen to Supabase ready event
@@ -789,19 +844,6 @@ function updateUIForActiveUser() {
   
   const statTotalPapCount = document.getElementById('statTotalPapCount');
   if (statTotalPapCount) statTotalPapCount.innerText = moments.length;
-
-  // Update Active Profile Button in Tab Kita
-  const btnRio = document.getElementById('btnProfileRio');
-  const btnNindya = document.getElementById('btnProfileNindya');
-  if (btnRio && btnNindya) {
-    if (activeUser.id === 'user-nindya-123' || (activeUser.name && activeUser.name.toLowerCase().includes('nindya'))) {
-      btnNindya.className = 'px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-primary-container text-white active-press transition-all';
-      btnRio.className = 'px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-surface text-on-background active-press transition-all';
-    } else {
-      btnRio.className = 'px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-primary-container text-white active-press transition-all';
-      btnNindya.className = 'px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-surface text-on-background active-press transition-all';
-    }
-  }
 
   // Update Flame Streak UI
   updateStreakUI();
