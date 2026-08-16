@@ -2418,6 +2418,7 @@ function checkAnniversaryNotification() {
 
 // --- PROFILE EDITING (EDIT PROFIL KAMU) ---
 let pendingEditAvatar = '';
+let pendingAvatarFile = null;
 
 function openEditProfileModal() {
   const activeUser = coupleData.users[coupleData.activeUser] || { name: currentUser?.name || 'Rio', avatar: '' };
@@ -2425,6 +2426,7 @@ function openEditProfileModal() {
   const nameInput = document.getElementById('profileNameInput');
   const avatarPreview = document.getElementById('profileEditAvatarPreview');
 
+  pendingAvatarFile = null;
   pendingEditAvatar = activeUser.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${activeUser.name}&backgroundColor=ffdfbf`;
 
   if (nameInput) nameInput.value = activeUser.name;
@@ -2445,9 +2447,34 @@ function closeEditProfileModal() {
 }
 
 function setProfileAvatarPreset(seed) {
+  pendingAvatarFile = null;
   pendingEditAvatar = `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=ffdfbf`;
   const avatarPreview = document.getElementById('profileEditAvatarPreview');
   if (avatarPreview) avatarPreview.src = pendingEditAvatar;
+}
+
+async function handleProfileAvatarSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    showToast('Memproses foto profil...', 'info');
+    // Compress and convert to standard JPEG (supports JPG, PNG, HEIC, WEBP, etc.)
+    const compressed = await compressImage(file, 640, 640, 0.85);
+    if (compressed.dataUrl) {
+      pendingEditAvatar = compressed.dataUrl;
+      pendingAvatarFile = compressed.blob || (compressed.dataUrl.startsWith('data:') ? dataURItoBlob(compressed.dataUrl) : file);
+      const avatarPreview = document.getElementById('profileEditAvatarPreview');
+      if (avatarPreview) avatarPreview.src = pendingEditAvatar;
+      showToast('Foto profil dipilih! Klik "Simpan Profil". 📸✨', 'check_circle');
+    }
+  } catch (err) {
+    console.error('Gagal memproses foto profil:', err);
+    showToast('Gagal memuat format gambar.', 'error');
+  }
+
+  // Reset file input value
+  event.target.value = '';
 }
 
 async function saveProfileChanges() {
@@ -2457,6 +2484,30 @@ async function saveProfileChanges() {
   if (!newName) {
     showToast('Nama tidak boleh kosong!', 'error');
     return;
+  }
+
+  showToast('Menyimpan perubahan profil... ✨', 'info');
+
+  // Upload custom avatar image to Supabase Storage if uploaded from file
+  if (pendingAvatarFile && isSupabaseReady() && currentUser) {
+    try {
+      const supabase = getSupabase();
+      const fileName = `${coupleData.id || 'default'}/avatar_${currentUser.id}_${Date.now()}.jpg`;
+      const { error: uploadErr } = await supabase.storage
+        .from('pap-photos')
+        .upload(fileName, pendingAvatarFile, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+      if (!uploadErr) {
+        const { data: pubData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
+        if (pubData?.publicUrl) {
+          pendingEditAvatar = pubData.publicUrl;
+        }
+      }
+    } catch (e) {
+      console.warn('Storage avatar upload notice:', e);
+    }
   }
 
   if (coupleData.activeUser && coupleData.users[coupleData.activeUser]) {
@@ -2482,6 +2533,7 @@ async function saveProfileChanges() {
 
   closeEditProfileModal();
   updateUIForActiveUser();
+  renderHomeView();
   showToast('Profil berhasil diperbarui! ✨', 'check_circle');
 }
 

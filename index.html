@@ -999,11 +999,23 @@
           </button>
         </div>
 
-        <div class="flex flex-col items-center gap-2">
-          <div class="w-20 h-20 rounded-full overflow-hidden neo-border bg-primary-container">
-            <img id="profileEditAvatarPreview" class="w-full h-full object-cover" src="" alt="Avatar"/>
+        <div class="flex flex-col items-center gap-2.5">
+          <div class="relative group cursor-pointer" onclick="document.getElementById('profileAvatarFileInput').click()">
+            <div class="w-20 h-20 rounded-full overflow-hidden neo-border bg-primary-container shadow-sm">
+              <img id="profileEditAvatarPreview" class="w-full h-full object-cover" src="" alt="Avatar"/>
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-container text-white rounded-full neo-border-sm flex items-center justify-center shadow-sm">
+              <span class="material-symbols-outlined text-sm">photo_camera</span>
+            </div>
           </div>
-          <span class="text-[11px] text-on-surface-variant font-medium">Pilih Karakter Lucu:</span>
+          
+          <button type="button" onclick="document.getElementById('profileAvatarFileInput').click()" class="px-3.5 py-1.5 bg-secondary-container text-on-secondary-container rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1.5 active-press hover:bg-secondary-container/80 transition-colors">
+            <span class="material-symbols-outlined text-sm">photo_library</span>
+            <span>Ganti Foto dari Galeri</span>
+          </button>
+          <input type="file" id="profileAvatarFileInput" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,.jpg,.jpeg,.png,.webp,image/*" class="hidden" onchange="handleProfileAvatarSelected(event)"/>
+
+          <span class="text-[11px] text-on-surface-variant font-medium mt-1">Atau pilih avatar karakter:</span>
           
           <div class="flex gap-2">
             <button type="button" onclick="setProfileAvatarPreset('Rio')" class="px-2.5 py-1 bg-surface neo-border-sm rounded-lg text-xs font-bold hover:bg-secondary-container">Boy 👦</button>
