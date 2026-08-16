@@ -505,156 +505,60 @@ async function handleAuthSession(session) {
   }
 }
 
-// --- Supabase Official Backend Authentication Gating ---
+// --- Direct Seamless Access Initialization ---
 function initSupabaseAuth() {
   if (supabaseAuthInitialized) return;
   supabaseAuthInitialized = true;
 
-  const loginScreen = document.getElementById('loginScreen');
-  const mainApp = document.getElementById('mainAppContent');
-
   const savedUser = localStorage.getItem('octo_permanent_user');
   if (savedUser) {
     try {
-      const user = JSON.parse(savedUser);
-      currentUser = user;
-      handleAuthSession({ user });
-      return;
+      currentUser = JSON.parse(savedUser);
     } catch(e) {}
   }
 
-  // Default: show login screen if no user saved
-  currentUser = null;
-  if (loginScreen) {
-    loginScreen.classList.remove('hidden');
-    loginScreen.classList.add('flex');
+  // Default to Rio on fresh device
+  if (!currentUser) {
+    currentUser = { 
+      id: 'user-rio-123', 
+      email: 'rio@octoleven.local', 
+      user_metadata: { full_name: 'Rio Refki Maulana' } 
+    };
+    localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
   }
-  if (mainApp) {
-    mainApp.classList.add('hidden');
-    mainApp.classList.remove('flex');
-  }
+
+  coupleData.activeUser = currentUser.id;
+  handleAuthSession({ user: currentUser });
 }
 
-let currentAuthMode = 'login';
-
-window.switchAuthTab = function(mode) {
-  currentAuthMode = mode;
-  const tabLogin = document.getElementById('tabAuthLogin');
-  const tabRegister = document.getElementById('tabAuthRegister');
-  const nameGroup = document.getElementById('authNameGroup');
-  const submitBtn = document.getElementById('authSubmitBtn');
-
-  if (mode === 'register') {
-    if (tabRegister) tabRegister.className = 'flex-1 font-label-bold text-xs py-1 text-center font-bold text-primary border-b-2 border-primary';
-    if (tabLogin) tabLogin.className = 'flex-1 font-label-bold text-xs py-1 text-center text-on-surface-variant';
-    if (nameGroup) nameGroup.classList.remove('hidden');
-    if (submitBtn) submitBtn.innerText = 'Daftar & Masuk ke Ruang Pasangan';
+window.switchDeviceUser = function(userId) {
+  if (userId === 'user-nindya-123') {
+    currentUser = { 
+      id: 'user-nindya-123', 
+      email: 'nindya@octoleven.local', 
+      user_metadata: { full_name: 'Nindya Rachmawati' } 
+    };
   } else {
-    if (tabLogin) tabLogin.className = 'flex-1 font-label-bold text-xs py-1 text-center font-bold text-primary border-b-2 border-primary';
-    if (tabRegister) tabRegister.className = 'flex-1 font-label-bold text-xs py-1 text-center text-on-surface-variant';
-    if (nameGroup) nameGroup.classList.add('hidden');
-    if (submitBtn) submitBtn.innerText = 'Masuk ke Ruang Pasangan';
-  }
-};
-
-window.handleAuthSubmit = async function() {
-  const emailEl = document.getElementById('authEmailInput');
-  const passEl = document.getElementById('authPasswordInput');
-
-  const username = (emailEl?.value || '').trim().toLowerCase();
-  const password = (passEl?.value || '').trim().toLowerCase();
-
-  if (!username) {
-    showToast('Masukkan Username atau Nama kamu!', 'warning');
-    return;
-  }
-
-  showToast('Membuka ruang berdua... 💖', 'sync');
-
-  let user = null;
-  // Akun Rio
-  if (username.includes('rio') || username.includes('refki') || username.includes('maulana') || username.includes('admin') || username === 'rio') {
-    user = { id: 'user-rio-123', email: 'rio@octoleven.local', user_metadata: { full_name: 'Rio Refki Maulana' } };
-  } 
-  // Akun Nindya
-  else if (username.includes('nindya') || username.includes('rachmawati') || username.includes('nindi') || username.includes('nidia') || username === 'nindya') {
-    user = { id: 'user-nindya-123', email: 'nindya@octoleven.local', user_metadata: { full_name: 'Nindya Rachmawati' } };
-  }
-  // Akun Kustom Umum
-  else {
-    const cleanId = 'user-' + username.replace(/[^a-z0-9]/g, '');
-    user = { 
-      id: cleanId, 
-      email: `${cleanId}@octoleven.local`, 
-      user_metadata: { full_name: emailEl.value.trim() } 
+    currentUser = { 
+      id: 'user-rio-123', 
+      email: 'rio@octoleven.local', 
+      user_metadata: { full_name: 'Rio Refki Maulana' } 
     };
   }
-
-  if (user) {
-    currentUser = user;
-    localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
-    showToast(`Selamat datang ${user.user_metadata.full_name}! ❤️`, 'favorite');
-    
-    handleAuthSession({ user: currentUser });
-  }
+  
+  localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
+  coupleData.activeUser = currentUser.id;
+  
+  showToast(`Profil beralih ke ${currentUser.user_metadata.full_name}! ❤️`, 'favorite');
+  playSound('heart');
+  vibrate(30);
+  
+  handleAuthSession({ user: currentUser });
 };
 
 window.quickLogin = function(profile) {
-  if (profile === 'rio') {
-    const user = { id: 'user-rio-123', email: 'rio@octoleven.local', user_metadata: { full_name: 'Rio Refki Maulana' } };
-    currentUser = user;
-    localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
-    showToast('Masuk sebagai Rio! ❤️', 'favorite');
-    handleAuthSession({ user });
-  } else if (profile === 'nindya') {
-    const user = { id: 'user-nindya-123', email: 'nindya@octoleven.local', user_metadata: { full_name: 'Nindya Rachmawati' } };
-    currentUser = user;
-    localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
-    showToast('Masuk sebagai Nindya! ❤️', 'favorite');
-    handleAuthSession({ user });
-  }
+  window.switchDeviceUser(profile === 'nindya' ? 'user-nindya-123' : 'user-rio-123');
 };
-
-window.loginWithGoogle = async function() {
-  if (!isSupabaseReady()) {
-    showToast('Edit supabase-config.js dengan URL & Anon Key Supabase Anda!', 'error');
-    return;
-  }
-
-  showToast('Menghubungkan ke Google Auth Supabase... 🚀', 'sync');
-
-  const supabase = getSupabase();
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin
-    }
-  });
-
-  if (error) {
-    showToast('Gagal Google Auth: ' + error.message, 'error');
-  }
-};
-
-function logout() {
-  // Clear local permanent session
-  localStorage.removeItem('octo_permanent_user');
-  currentUser = null;
-
-  if (isSupabaseReady()) {
-    const supabase = getSupabase();
-    supabase.auth.signOut();
-  }
-
-  const loginScreen = document.getElementById('loginScreen');
-  const mainApp = document.getElementById('mainAppContent');
-  if (loginScreen) loginScreen.classList.remove('hidden');
-  if (mainApp) {
-    mainApp.classList.add('hidden');
-    mainApp.classList.remove('flex');
-  }
-  showToast('Anda telah keluar.', 'logout');
-}
 
 // Listen to Supabase ready event
 document.addEventListener('DOMContentLoaded', () => {
@@ -885,6 +789,19 @@ function updateUIForActiveUser() {
   
   const statTotalPapCount = document.getElementById('statTotalPapCount');
   if (statTotalPapCount) statTotalPapCount.innerText = moments.length;
+
+  // Update Active Profile Button in Tab Kita
+  const btnRio = document.getElementById('btnProfileRio');
+  const btnNindya = document.getElementById('btnProfileNindya');
+  if (btnRio && btnNindya) {
+    if (activeUser.id === 'user-nindya-123' || (activeUser.name && activeUser.name.toLowerCase().includes('nindya'))) {
+      btnNindya.className = 'px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-primary-container text-white active-press transition-all';
+      btnRio.className = 'px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-surface text-on-background active-press transition-all';
+    } else {
+      btnRio.className = 'px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-primary-container text-white active-press transition-all';
+      btnNindya.className = 'px-3 py-1.5 rounded-xl text-xs font-bold neo-border-sm bg-surface text-on-background active-press transition-all';
+    }
+  }
 
   // Update Flame Streak UI
   updateStreakUI();
