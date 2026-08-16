@@ -1457,98 +1457,15 @@ function closePapModal() {
 }
 
 async function startLiveCamera() {
-  try {
-    const videoEl = document.getElementById('cameraVideo');
-    const placeholder = document.getElementById('cameraPlaceholder');
-    const controls = document.getElementById('activeCameraControls');
-    const imgPreview = document.getElementById('imagePreview');
-
-    if (imgPreview) imgPreview.classList.add('hidden');
-
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: currentFacingMode,
-          width: { ideal: 1920, max: 3840 },
-          height: { ideal: 1080, max: 2160 }
-        },
-        audio: false
-      });
-      videoEl.srcObject = mediaStream;
-      videoEl.classList.remove('hidden');
-      placeholder.classList.add('hidden');
-      controls.classList.remove('hidden');
-    } else {
-      showToast('Kamera tidak didukung di browser ini. Silakan pilih dari galeri.', 'warning');
-    }
-  } catch (err) {
-    showToast('Izin kamera ditolak. Silakan gunakan unggah foto galeri.', 'warning');
-  }
-}
-
-// --- PAP MEDIA STATE (PHOTO & 10s VIDEO) ---
-
-let mediaRecorder = null;
-let recordedVideoChunks = [];
-
-
-
-let recordTimerInterval = null;
-let recordDurationSeconds = 0;
-let isRecordingVideo = false;
-
-function setPapMode(mode) {
-  currentPapMode = mode;
-  const btnPhoto = document.getElementById('btnModePhoto');
-  const btnVideo = document.getElementById('btnModeVideo');
-  const placeholderIcon = document.getElementById('placeholderIconContainer');
-  const placeholderTitle = document.getElementById('placeholderTitle');
-  const placeholderSubtitle = document.getElementById('placeholderSubtitle');
-  const btnOpenLiveCamText = document.getElementById('btnOpenLiveCamText');
-  const samplePicker = document.getElementById('samplePhotosPicker');
-  const shutterCircle = document.getElementById('shutterInnerCircle');
-
-  if (mode === 'photo') {
-    if (btnPhoto) btnPhoto.className = 'py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 bg-surface text-on-background neo-border-sm shadow-sm transition-all';
-    if (btnVideo) btnVideo.className = 'py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 text-on-surface-variant hover:bg-surface/50 transition-all';
-    if (placeholderIcon) placeholderIcon.innerText = '📸';
-    if (placeholderTitle) placeholderTitle.innerText = 'Ambil Foto atau Pilih dari Galeri';
-    if (placeholderSubtitle) placeholderSubtitle.innerText = 'Tunjukkan ke pasangan apa yang lagi kamu lakuin!';
-    if (btnOpenLiveCamText) btnOpenLiveCamText.innerText = 'Buka Kamera Foto';
-    if (samplePicker) samplePicker.classList.remove('hidden');
-    if (shutterCircle) shutterCircle.className = 'shutter-inner bg-white';
-  } else {
-    if (btnPhoto) btnPhoto.className = 'py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 text-on-surface-variant hover:bg-surface/50 transition-all';
-    if (btnVideo) btnVideo.className = 'py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 bg-red-50 text-red-700 neo-border-sm shadow-sm transition-all';
-    if (placeholderIcon) placeholderIcon.innerText = '🎥';
-    if (placeholderTitle) placeholderTitle.innerText = 'Rekam Video Singkat (Maks. 10 Detik)';
-    if (placeholderSubtitle) placeholderSubtitle.innerText = 'Kirim video manis agar momen kalian terasa lebih hidup!';
-    if (btnOpenLiveCamText) btnOpenLiveCamText.innerText = 'Buka Kamera Video (10s)';
-    if (samplePicker) samplePicker.classList.add('hidden');
-    if (shutterCircle) shutterCircle.className = 'shutter-inner bg-red-600';
-  }
-
-  // If camera is open, restart camera with appropriate constraints (audio for video)
-  if (mediaStream) {
-    stopLiveCamera();
-    startLiveCamera();
-  }
-}
-
-async function startLiveCamera() {
   const videoEl = document.getElementById('cameraVideo');
   const imgPreview = document.getElementById('imagePreview');
-  const videoPreview = document.getElementById('videoPlaybackPreview');
   const placeholder = document.getElementById('cameraPlaceholder');
   const controls = document.getElementById('activeCameraControls');
   const badgeOverlay = document.getElementById('previewBadgeOverlay');
-  const recordIndicator = document.getElementById('videoRecordIndicator');
 
   if (imgPreview) imgPreview.classList.add('hidden');
-  if (videoPreview) videoPreview.classList.add('hidden');
   if (placeholder) placeholder.classList.add('hidden');
   if (badgeOverlay) badgeOverlay.classList.add('hidden');
-  if (recordIndicator) recordIndicator.classList.add('hidden');
 
   try {
     const constraints = {
@@ -1557,7 +1474,7 @@ async function startLiveCamera() {
         width: { ideal: 1280 },
         height: { ideal: 1280 }
       },
-      audio: currentPapMode === 'video'
+      audio: false
     };
 
     mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -1575,9 +1492,6 @@ async function startLiveCamera() {
 }
 
 function stopLiveCamera() {
-  if (isRecordingVideo) {
-    stopVideoRecording();
-  }
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
     mediaStream = null;
@@ -1593,11 +1507,7 @@ function switchCameraFacing() {
 }
 
 function handleShutterAction() {
-  if (currentPapMode === 'photo') {
-    takeCameraSnap();
-  } else {
-    toggleVideoRecording();
-  }
+  takeCameraSnap();
 }
 
 function takeCameraSnap() {
@@ -1621,187 +1531,20 @@ function takeCameraSnap() {
   ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
 
   currentCapturedImage = canvas.toDataURL('image/jpeg', 0.92);
-  currentCapturedVideoBlob = null;
-  currentCapturedVideoUrl = null;
   currentMediaFile = null;
 
   playSound('snap');
   vibrate(50);
   stopLiveCamera();
 
-  imgPreview.src = currentCapturedImage;
-  imgPreview.classList.remove('hidden');
-  controls.classList.add('hidden');
+  if (imgPreview) {
+    imgPreview.src = currentCapturedImage;
+    imgPreview.classList.remove('hidden');
+  }
+  if (controls) controls.classList.add('hidden');
   if (badgeOverlay) {
     badgeOverlay.innerText = selectedSticker;
     badgeOverlay.classList.remove('hidden');
-  }
-}
-
-// --- 10s VIDEO RECORDING ENGINE ---
-function toggleVideoRecording() {
-  if (!isRecordingVideo) {
-    startVideoRecording();
-  } else {
-    stopVideoRecording();
-  }
-}
-
-function startVideoRecording() {
-  if (!mediaStream) return;
-
-  recordedVideoChunks = [];
-  recordDurationSeconds = 0;
-  isRecordingVideo = true;
-
-  const shutterBtn = document.getElementById('mainShutterBtn');
-  const recordIndicator = document.getElementById('videoRecordIndicator');
-  const recordTimerText = document.getElementById('recordTimerText');
-
-  if (shutterBtn) shutterBtn.classList.add('recording');
-  if (recordIndicator) {
-    recordIndicator.classList.remove('hidden');
-    recordIndicator.classList.add('flex');
-  }
-  if (recordTimerText) recordTimerText.innerText = 'REC 00:00 / 00:10';
-
-  playSound('snap');
-  vibrate([60, 40, 60]);
-
-  try {
-    let options = { mimeType: 'video/webm;codecs=vp8,opus' };
-    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-      options = { mimeType: 'video/webm' };
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options = { mimeType: 'video/mp4' };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-          options = {};
-        }
-      }
-    }
-
-    mediaRecorder = new MediaRecorder(mediaStream, options);
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
-        recordedVideoChunks.push(e.data);
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      finalizeVideoRecording();
-    };
-
-    mediaRecorder.start(200);
-
-    // Timer countdown 0 to 10 seconds
-    const startTime = Date.now();
-    recordTimerInterval = setInterval(() => {
-      const elapsedMs = Date.now() - startTime;
-      const elapsedSec = Math.min(10, elapsedMs / 1000);
-      const displaySec = Math.floor(elapsedSec);
-      const displayMs = Math.floor((elapsedSec % 1) * 10);
-      
-      if (recordTimerText) {
-        recordTimerText.innerText = `REC 00:0${displaySec}.${displayMs} / 00:10`;
-      }
-
-      if (elapsedSec >= 10) {
-        stopVideoRecording();
-      }
-    }, 100);
-
-  } catch (err) {
-    console.error('Gagal memulai perekaman video:', err);
-    showToast('Perekaman video tidak didukung browser ini: ' + err.message, 'error');
-    stopVideoRecording();
-  }
-}
-
-function stopVideoRecording() {
-  if (!isRecordingVideo) return;
-  isRecordingVideo = false;
-
-  if (recordTimerInterval) {
-    clearInterval(recordTimerInterval);
-    recordTimerInterval = null;
-  }
-
-  const shutterBtn = document.getElementById('mainShutterBtn');
-  const recordIndicator = document.getElementById('videoRecordIndicator');
-
-  if (shutterBtn) shutterBtn.classList.remove('recording');
-  if (recordIndicator) {
-    recordIndicator.classList.add('hidden');
-    recordIndicator.classList.remove('flex');
-  }
-
-  playSound('snap');
-  vibrate(50);
-
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
-}
-
-function finalizeVideoRecording() {
-  const mimeType = mediaRecorder?.mimeType || 'video/mp4';
-  currentCapturedVideoBlob = new Blob(recordedVideoChunks, { type: mimeType });
-  currentCapturedVideoUrl = URL.createObjectURL(currentCapturedVideoBlob);
-  currentMediaFile = currentCapturedVideoBlob;
-  currentCapturedImage = null;
-
-  // Generate thumbnail from first frame
-  captureVideoThumbnail(currentCapturedVideoUrl);
-
-  const videoPreview = document.getElementById('videoPlaybackPreview');
-  const controls = document.getElementById('activeCameraControls');
-  const badgeOverlay = document.getElementById('previewBadgeOverlay');
-  const soundToggleBtn = document.getElementById('videoSoundToggleBtn');
-
-  stopLiveCamera();
-
-  if (videoPreview) {
-    videoPreview.src = currentCapturedVideoUrl;
-    videoPreview.classList.remove('hidden');
-    videoPreview.muted = false;
-    videoPreview.play();
-  }
-
-  if (controls) controls.classList.add('hidden');
-  if (soundToggleBtn) soundToggleBtn.classList.remove('hidden');
-  if (badgeOverlay) {
-    badgeOverlay.innerText = selectedSticker + ' 🎥 10s';
-    badgeOverlay.classList.remove('hidden');
-  }
-
-  showToast('Video 10 detik berhasil direkam! 🎥', 'videocam');
-}
-
-function captureVideoThumbnail(videoUrl) {
-  const tempVideo = document.createElement('video');
-  tempVideo.src = videoUrl;
-  tempVideo.muted = true;
-  tempVideo.playsInline = true;
-  tempVideo.currentTime = 0.5;
-
-  tempVideo.onloadeddata = () => {
-    const canvas = document.getElementById('captureCanvas') || document.createElement('canvas');
-    canvas.width = tempVideo.videoWidth || 640;
-    canvas.height = tempVideo.videoHeight || 640;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
-    videoThumbnailUrl = canvas.toDataURL('image/jpeg', 0.85);
-  };
-}
-
-function togglePreviewSound() {
-  const videoPreview = document.getElementById('videoPlaybackPreview');
-  const soundIcon = document.getElementById('videoSoundIcon');
-  if (videoPreview && soundIcon) {
-    videoPreview.muted = !videoPreview.muted;
-    soundIcon.innerText = videoPreview.muted ? 'volume_off' : 'volume_up';
-    vibrate(20);
   }
 }
 
@@ -1809,61 +1552,29 @@ function handleFileSelected(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  const isVideo = false;
   currentMediaFile = file;
 
   const imgPreview = document.getElementById('imagePreview');
-  const videoPreview = document.getElementById('videoPlaybackPreview');
   const placeholder = document.getElementById('cameraPlaceholder');
   const badgeOverlay = document.getElementById('previewBadgeOverlay');
-  const soundToggleBtn = document.getElementById('videoSoundToggleBtn');
 
   stopLiveCamera();
   if (placeholder) placeholder.classList.add('hidden');
 
-  if (isVideo) {
-    currentPapMode = 'video';
-    currentCapturedVideoBlob = file;
-    currentCapturedVideoUrl = URL.createObjectURL(file);
-    currentCapturedImage = null;
-
-    captureVideoThumbnail(currentCapturedVideoUrl);
-
-    if (imgPreview) imgPreview.classList.add('hidden');
-    if (videoPreview) {
-      videoPreview.src = currentCapturedVideoUrl;
-      videoPreview.classList.remove('hidden');
-      videoPreview.muted = false;
-      videoPreview.play();
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    currentCapturedImage = e.target.result;
+    if (imgPreview) {
+      imgPreview.src = currentCapturedImage;
+      imgPreview.classList.remove('hidden');
     }
-    if (soundToggleBtn) soundToggleBtn.classList.remove('hidden');
     if (badgeOverlay) {
-      badgeOverlay.innerText = selectedSticker + ' 🎥';
+      badgeOverlay.innerText = selectedSticker;
       badgeOverlay.classList.remove('hidden');
     }
-    showToast('Video dipilih dari galeri! 🎥 (Maks. 10s)', 'videocam');
-  } else {
-    currentPapMode = 'photo';
-    currentCapturedVideoBlob = null;
-    currentCapturedVideoUrl = null;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      currentCapturedImage = e.target.result;
-      if (videoPreview) videoPreview.classList.add('hidden');
-      if (soundToggleBtn) soundToggleBtn.classList.add('hidden');
-      if (imgPreview) {
-        imgPreview.src = currentCapturedImage;
-        imgPreview.classList.remove('hidden');
-      }
-      if (badgeOverlay) {
-        badgeOverlay.innerText = selectedSticker;
-        badgeOverlay.classList.remove('hidden');
-      }
-    };
-    reader.readAsDataURL(file);
-    showToast('Foto dipilih dari galeri! 📸', 'photo');
-  }
+  };
+  reader.readAsDataURL(file);
+  showToast('Foto dipilih dari galeri! 📸', 'photo');
 
   playSound('snap');
   vibrate(30);
