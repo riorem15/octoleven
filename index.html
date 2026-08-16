@@ -106,21 +106,33 @@
       <!-- Auth Form Container -->
       <div class="bg-surface-container neo-border neo-shadow rounded-2xl p-4 text-left space-y-3">
         <div class="text-center pb-2 mb-3 border-b border-outline-variant/40">
-          <span class="font-label-bold text-xs font-bold text-primary">Login Khusus Pasangan</span>
+          <span class="font-label-bold text-xs font-bold text-primary">Login Ruang Berdua</span>
+        </div>
+
+        <!-- Quick 1-Tap Login Buttons -->
+        <div class="grid grid-cols-2 gap-2 mb-2">
+          <button type="button" onclick="quickLogin('rio')" class="py-2.5 px-3 bg-surface hover:bg-primary-container hover:text-white rounded-xl neo-border-sm font-label-bold text-xs flex items-center justify-center gap-1.5 active-press transition-all">
+            <span>🧑</span>
+            <span>Rio</span>
+          </button>
+          <button type="button" onclick="quickLogin('nindya')" class="py-2.5 px-3 bg-surface hover:bg-primary-container hover:text-white rounded-xl neo-border-sm font-label-bold text-xs flex items-center justify-center gap-1.5 active-press transition-all">
+            <span>👩</span>
+            <span>Nindya</span>
+          </button>
         </div>
 
         <div class="space-y-1">
           <label class="text-[11px] font-bold text-on-background">Username (Nama Anda)</label>
-          <input type="text" id="authEmailInput" placeholder="Contoh: Rio" class="w-full bg-surface rounded-xl p-2.5 text-xs neo-input font-medium"/>
+          <input type="text" id="authEmailInput" placeholder="Contoh: Rio / Nindya" class="w-full bg-surface rounded-xl p-2.5 text-xs neo-input font-medium" onkeydown="if(event.key==='Enter') handleAuthSubmit()"/>
         </div>
 
         <div class="space-y-1">
-          <label class="text-[11px] font-bold text-on-background">Kata Sandi Rahasia</label>
-          <input type="password" id="authPasswordInput" placeholder="••••••••" class="w-full bg-surface rounded-xl p-2.5 text-xs neo-input font-medium"/>
+          <label class="text-[11px] font-bold text-on-background">Kata Sandi (Opsional)</label>
+          <input type="password" id="authPasswordInput" placeholder="••••••••" class="w-full bg-surface rounded-xl p-2.5 text-xs neo-input font-medium" onkeydown="if(event.key==='Enter') handleAuthSubmit()"/>
         </div>
 
-        <button type="button" id="authSubmitBtn" onclick="handleAuthSubmit()" class="w-full py-3 bg-secondary-container text-on-secondary-container neo-border rounded-xl font-label-bold text-xs font-bold neo-shadow-sm active-press mt-2">
-          Masuk ke Ruang Pasangan
+        <button type="button" id="authSubmitBtn" onclick="handleAuthSubmit()" class="w-full py-3 bg-primary-container text-white neo-border rounded-xl font-label-bold text-xs font-bold neo-shadow-sm active-press mt-2 hover:bg-primary transition-colors">
+          Masuk ke Ruang Pasangan ❤️
         </button>
       </div>
     </div>

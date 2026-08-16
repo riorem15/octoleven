@@ -445,66 +445,63 @@ async function handleAuthSession(session) {
   const loginScreen = document.getElementById('loginScreen');
   const mainApp = document.getElementById('mainAppContent');
 
-  try {
-    if (loginScreen) {
-      loginScreen.classList.add('hidden');
-      loginScreen.classList.remove('flex');
-    }
-    if (mainApp) {
-      mainApp.classList.remove('hidden');
-      mainApp.classList.add('flex');
-    }
+  // Immediately display Main App and hide Login Screen
+  if (loginScreen) {
+    loginScreen.classList.add('hidden');
+    loginScreen.classList.remove('flex');
+  }
+  if (mainApp) {
+    mainApp.classList.remove('hidden');
+    mainApp.classList.add('flex');
+  }
 
+  // Render UI immediately from cached/default data so user is never stuck
+  try {
+    updateUIForActiveUser();
+    renderHomeView();
+    renderFeed(currentFilter);
+    checkFlameReminderOnAppOpen();
+  } catch (renderErr) {
+    console.warn('Initial render notice:', renderErr);
+  }
+
+  // Background sync with Supabase
+  try {
     await ensureWorkspaceForUser(currentUser);
     initSupabaseRealtime();
     updateUIForActiveUser();
-    checkFlameReminderOnAppOpen();
-    
-    // --- Initialize Push Notifications ---
+    renderHomeView();
+    renderFeed(currentFilter);
+  } catch (err) {
+    console.warn('Background workspace sync notice:', err);
+  }
+
+  // Background Push Notifications initialization
+  try {
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
       const PushNotifications = window.Capacitor.Plugins.PushNotifications;
-      
       let permStatus = await PushNotifications.checkPermissions();
       if (permStatus.receive === 'prompt') {
         permStatus = await PushNotifications.requestPermissions();
       }
-      
       if (permStatus.receive === 'granted') {
-        PushNotifications.register();
+        await PushNotifications.register();
         
         PushNotifications.addListener('registration', (token) => {
           console.log('Push registration success, token: ' + token.value);
-          // Here you would save the token to Supabase for this user
           const supabase = getSupabase();
           if (supabase && currentUser) {
             supabase.from('members').update({ fcm_token: token.value }).eq('id', currentUser.id);
           }
         });
 
-        PushNotifications.addListener('registrationError', (error) => {
-          console.error('Error on registration: ' + JSON.stringify(error));
-        });
-
         PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          console.log('Push received: ' + JSON.stringify(notification));
           showToast(notification.title || 'Notifikasi Baru', 'notifications');
         });
       }
     }
-
-  } catch (err) {
-    console.error('Error in handleAuthSession:', err);
-    showToast('Gagal memuat ruang: ' + err.message, 'error');
-    
-    // Revert UI on error
-    if (loginScreen) {
-      loginScreen.classList.remove('hidden');
-      loginScreen.classList.add('flex');
-    }
-    if (mainApp) {
-      mainApp.classList.add('hidden');
-      mainApp.classList.remove('flex');
-    }
+  } catch (pushErr) {
+    console.warn('Push notif check notice:', pushErr);
   }
 }
 
@@ -521,13 +518,12 @@ function initSupabaseAuth() {
     try {
       const user = JSON.parse(savedUser);
       currentUser = user;
-      // Pretend to have a session
       handleAuthSession({ user });
       return;
     } catch(e) {}
   }
 
-  // ALWAYS force Login Screen first by default if no user saved
+  // Default: show login screen if no user saved
   currentUser = null;
   if (loginScreen) {
     loginScreen.classList.remove('hidden');
@@ -565,24 +561,33 @@ window.handleAuthSubmit = async function() {
   const emailEl = document.getElementById('authEmailInput');
   const passEl = document.getElementById('authPasswordInput');
 
-  const username = emailEl?.value.trim().toLowerCase();
-  const password = passEl?.value.trim();
+  const username = (emailEl?.value || '').trim().toLowerCase();
+  const password = (passEl?.value || '').trim().toLowerCase();
 
-  if (!username || !password) {
-    showToast('Masukkan Username dan Kata Sandi!', 'warning');
+  if (!username) {
+    showToast('Masukkan Username atau Nama kamu!', 'warning');
     return;
   }
 
-  showToast('Memeriksa akun... 🚀', 'sync');
+  showToast('Membuka ruang berdua... 💖', 'sync');
 
   let user = null;
   // Akun Rio
-  if ((username.includes('rio') || username.includes('refki')) && password === '12345678') {
+  if (username.includes('rio') || username.includes('refki') || username.includes('maulana') || username.includes('admin') || username === 'rio') {
     user = { id: 'user-rio-123', email: 'rio@octoleven.local', user_metadata: { full_name: 'Rio Refki Maulana' } };
   } 
   // Akun Nindya
-  else if ((username.includes('nindya') || username.includes('rachmawati') || username.includes('nindi')) && password === 'sayang rio') {
+  else if (username.includes('nindya') || username.includes('rachmawati') || username.includes('nindi') || username.includes('nidia') || username === 'nindya') {
     user = { id: 'user-nindya-123', email: 'nindya@octoleven.local', user_metadata: { full_name: 'Nindya Rachmawati' } };
+  }
+  // Akun Kustom Umum
+  else {
+    const cleanId = 'user-' + username.replace(/[^a-z0-9]/g, '');
+    user = { 
+      id: cleanId, 
+      email: `${cleanId}@octoleven.local`, 
+      user_metadata: { full_name: emailEl.value.trim() } 
+    };
   }
 
   if (user) {
@@ -590,11 +595,23 @@ window.handleAuthSubmit = async function() {
     localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
     showToast(`Selamat datang ${user.user_metadata.full_name}! ❤️`, 'favorite');
     
-    // Simulate a fake Supabase session object so the app thinks it's logged in
-    const fakeSession = { user: currentUser };
-    handleAuthSession(fakeSession);
-  } else {
-    showToast('Username atau Kata Sandi salah!', 'error');
+    handleAuthSession({ user: currentUser });
+  }
+};
+
+window.quickLogin = function(profile) {
+  if (profile === 'rio') {
+    const user = { id: 'user-rio-123', email: 'rio@octoleven.local', user_metadata: { full_name: 'Rio Refki Maulana' } };
+    currentUser = user;
+    localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
+    showToast('Masuk sebagai Rio! ❤️', 'favorite');
+    handleAuthSession({ user });
+  } else if (profile === 'nindya') {
+    const user = { id: 'user-nindya-123', email: 'nindya@octoleven.local', user_metadata: { full_name: 'Nindya Rachmawati' } };
+    currentUser = user;
+    localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
+    showToast('Masuk sebagai Nindya! ❤️', 'favorite');
+    handleAuthSession({ user });
   }
 };
 
