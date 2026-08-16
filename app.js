@@ -1601,12 +1601,8 @@ function takeCameraSnap() {
   canvas.width = videoEl.videoWidth || 1280;
   canvas.height = videoEl.videoHeight || 1280;
   const ctx = canvas.getContext('2d');
-  
-  if (currentFacingMode === 'user') {
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-  }
-  
+
+  // No mirror flip - draw exactly as the camera sees
   ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
 
   const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
@@ -1617,15 +1613,32 @@ function handleFileSelected(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  currentMediaFile = file;
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    if (e.target?.result) {
-      setCapturedPapImage(e.target.result);
+  // Convert any image format (JPG, PNG, HEIC, WEBP, etc.) to JPEG via canvas
+  const objectUrl = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = function() {
+    const canvas = document.getElementById('captureCanvas') || document.createElement('canvas');
+    const maxDim = 1280;
+    let w = img.width;
+    let h = img.height;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else { w = Math.round(w * maxDim / h); h = maxDim; }
     }
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.90);
+    URL.revokeObjectURL(objectUrl);
+    currentMediaFile = null; // We converted to dataUrl, no need for raw file
+    setCapturedPapImage(jpegDataUrl);
   };
-  reader.readAsDataURL(file);
+  img.onerror = function() {
+    URL.revokeObjectURL(objectUrl);
+    showToast('Format gambar tidak didukung, coba foto lain.', 'error');
+  };
+  img.src = objectUrl;
 
   // Reset file input value so selecting the same photo again triggers change
   event.target.value = '';
@@ -1662,29 +1675,110 @@ function updateStickerButtons() {
 
 // --- Submit New PAP Photo to Supabase Storage & Database ---
 async function submitNewPap() {
-  if (!currentCapturedImage && !currentMediaFile) {
-    showToast('Ambil foto langsung dengan kamera atau pilih dari galeri! 📸', 'warning');
+  if (!currentCapturedImage) {
+    showToast('Ambil foto dulu dengan kamera atau pilih dari galeri! 📸', 'warning');
     vibrate(60);
     return;
   }
 
   const captionInput = document.getElementById('papCaptionInput');
   const caption = captionInput?.value.trim() || 'PAP hari ini buat kamu tersayang! ❤️';
-  const activeUser = coupleData.users[coupleData.activeUser] || { name: currentUser?.name || 'Rio' };
+  const activeUser = coupleData.users[coupleData.activeUser] || { name: currentUser?.name || 'Pengguna' };
+  const savedImage = currentCapturedImage; // Save reference before closing modal
 
   closePapModal();
   playSound('heart');
   vibrate([40, 60, 40]);
-  showToast('Mengompres & mengunggah foto ke Supabase... 📸🚀', 'cloud_upload');
+  showToast('Mengunggah foto ke server... 📸🚀', 'cloud_upload');
 
-  let publicThumbUrl = currentCapturedImage || SAMPLE_PRESET_PHOTOS[0];
+  let finalPhotoUrl = savedImage;
 
-  // 1. Instantly update local moments so the photo displays immediately with 0 lag
-  const tempId = 'pap-' + Date.now();
+  // Step 1: Upload to Supabase Storage first
+  if (isSupabaseReady() && currentUser) {
+    const supabase = getSupabase();
+    try {
+      // Convert data URL to JPEG blob
+      let jpegBlob = null;
+      if (savedImage && savedImage.startsWith('data:')) {
+        const byteString = atob(savedImage.split(',')[1]);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        jpegBlob = new Blob([ab], { type: 'image/jpeg' });
+      }
+
+      if (jpegBlob && jpegBlob.size > 0) {
+        const fileName = `${coupleData.id || 'default'}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('pap-photos')
+          .upload(fileName, jpegBlob, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error('UPLOAD ERROR:', JSON.stringify(uploadError));
+          showToast('Gagal upload foto: ' + (uploadError.message || 'Error'), 'error');
+        } else {
+          const { data: publicUrlData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
+          if (publicUrlData?.publicUrl) {
+            finalPhotoUrl = publicUrlData.publicUrl;
+          }
+        }
+      } else {
+        console.warn('No valid JPEG blob to upload, savedImage length:', savedImage?.length);
+      }
+
+      // Step 2: Insert record to paps table
+      const { data: insertData, error: dbError } = await supabase.from('paps').insert({
+        couple_id: coupleData.id,
+        sender_id: currentUser.id,
+        sender_name: activeUser.name,
+        sender_avatar: activeUser.avatar || '',
+        photo_url: finalPhotoUrl,
+        video_url: null,
+        is_video: false,
+        sticker: selectedSticker,
+        caption: caption,
+        like_count: 1
+      });
+
+      if (dbError) {
+        console.error('DB INSERT ERROR:', JSON.stringify(dbError));
+        showToast('Gagal simpan ke database: ' + (dbError.message || 'Error'), 'error');
+      } else {
+        showToast('PAP berhasil dikirim! 📸💖', 'check_circle');
+        triggerConfetti();
+
+        // Send push notification
+        sendPushNotification('PAP Baru Masuk! 📸', `${activeUser.name} ngirim PAP spesial nih, yuk intip!`, {
+          event: 'new_pap',
+          widget_update: 'true',
+          imageUrl: finalPhotoUrl,
+          isVideo: 'false',
+          senderName: activeUser.name,
+          caption: caption || '',
+          tagText: selectedSticker + ' ✨'
+        });
+      }
+
+      // Refresh feed from Supabase
+      await fetchMomentsFromSupabase();
+      return;
+
+    } catch (err) {
+      console.error('SUBMIT PAP ERROR:', err);
+      showToast('Error: ' + (err.message || 'Gagal mengirim PAP'), 'error');
+    }
+  }
+
+  // Offline fallback
   const newMoment = {
-    id: tempId,
-    coupleId: coupleData.id,
-    image: currentCapturedImage || SAMPLE_PRESET_PHOTOS[0],
+    id: 'local-' + Date.now(),
+    image: finalPhotoUrl,
     videoUrl: null,
     isVideo: false,
     senderId: currentUser?.id || coupleData.activeUser,
@@ -1697,89 +1791,13 @@ async function submitNewPap() {
     comments: [],
     reactions: { '❤️': 1 }
   };
-
   moments.unshift(newMoment);
   saveData();
   renderFeed(currentFilter);
   renderHomeView();
   updateStreakUI();
   triggerConfetti();
-
-  // 2. Upload to Supabase Storage & Database in background
-  if (isSupabaseReady() && currentUser) {
-    const supabase = getSupabase();
-    try {
-      let fileToUpload = null;
-
-      if (currentCapturedImage && currentCapturedImage.startsWith('data:')) {
-        fileToUpload = dataURItoBlob(currentCapturedImage);
-      } else if (currentMediaFile) {
-        fileToUpload = currentMediaFile;
-      }
-
-      if (fileToUpload) {
-        const fileExt = 'jpg';
-        const fileName = `${coupleData.id || 'default'}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('pap-photos')
-          .upload(fileName, fileToUpload, {
-            contentType: 'image/jpeg',
-            upsert: true
-          });
-
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
-          if (publicUrlData?.publicUrl) {
-            publicThumbUrl = publicUrlData.publicUrl;
-            newMoment.image = publicThumbUrl;
-            saveData();
-          }
-        } else {
-          console.warn('Storage upload notice:', uploadError);
-        }
-      }
-
-      // Insert Database Record
-      const { error: dbError } = await supabase.from('paps').insert({
-        couple_id: coupleData.id,
-        sender_id: currentUser.id,
-        sender_name: activeUser.name,
-        sender_avatar: activeUser.avatar || '',
-        photo_url: publicThumbUrl,
-        video_url: null,
-        is_video: false,
-        sticker: selectedSticker,
-        caption: caption,
-        like_count: 1
-      });
-
-      if (dbError) {
-        console.warn('Supabase DB notice:', dbError);
-      } else {
-        showToast('Foto PAP berhasil tersimpan di Supabase! 📸💖', 'check_circle');
-      }
-
-      // Send Push Notification & Update Android Home Screen Widgets
-      sendPushNotification('PAP Baru Masuk! 📸', `${activeUser.name} ngirim PAP spesial nih, yuk intip!`, {
-        event: 'new_pap',
-        widget_update: 'true',
-        imageUrl: publicThumbUrl,
-        isVideo: 'false',
-        senderName: activeUser.name,
-        caption: caption || '',
-        tagText: selectedSticker + ' ✨'
-      });
-
-      // Fetch fresh moments from Supabase
-      setTimeout(() => {
-        fetchMomentsFromSupabase();
-      }, 500);
-
-    } catch (err) {
-      console.warn('Supabase upload notice:', err);
-    }
-  }
+  showToast('PAP tersimpan lokal (offline)! 📸', 'check_circle');
 }
 
 // --- Mood Tracker Logic ---
