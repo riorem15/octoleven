@@ -109,6 +109,7 @@ public class OctoMessagingService extends FirebaseMessagingService {
     private void showSystemNotification(String title, String body, String imageUrl, String event) {
         Context context = getApplicationContext();
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
         // Buat Notification Channel untuk Android 8.0 (Oreo) ke atas
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -122,6 +123,13 @@ public class OctoMessagingService extends FirebaseMessagingService {
             channel.enableVibration(true);
             channel.setShowBadge(true);
             channel.setVibrationPattern(new long[]{0, 250, 150, 250});
+            
+            android.media.AudioAttributes audioAttributes = new android.media.AudioAttributes.Builder()
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                    .build();
+            channel.setSound(defaultSoundUri, audioAttributes);
+            
             if (notificationManager != null) {
                 notificationManager.createNotificationChannel(channel);
             }
@@ -139,16 +147,16 @@ public class OctoMessagingService extends FirebaseMessagingService {
                 PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.ic_stat_notification)
+                .setColor(0xFFFF6B8A)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setVibrate(new long[]{0, 250, 150, 250})
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(android.app.Notification.DEFAULT_ALL)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setContentIntent(pendingIntent);
 
         // Jika ada gambar (misal PAP), coba muat sebagai BigPictureStyle

@@ -193,8 +193,8 @@ async function hydrateWorkspace(workspaceId) {
   coupleData.isPaired = Object.keys(coupleData.users).length > 1;
 
   // Upsert current member profile
-  const userName = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Pengguna';
-  const userAvatar = currentUser.user_metadata?.avatar_url || '';
+  const userName = currentUser.name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Pengguna';
+  const userAvatar = currentUser.avatar || currentUser.user_metadata?.avatar_url || '';
 
   const currentMember = coupleData.users[currentUser.id] || {
     id: currentUser.id,
@@ -204,9 +204,15 @@ async function hydrateWorkspace(workspaceId) {
     moodText: 'Lagi mikirin kamu!'
   };
   
-  // Force update the name to fix any typos stored in DB
-  if (currentMember.name !== userName) {
-    currentMember.name = userName;
+  // Preserve non-empty avatar
+  if (!currentMember.avatar && userAvatar) {
+    currentMember.avatar = userAvatar;
+  }
+  if (currentMember.avatar) {
+    currentUser.avatar = currentMember.avatar;
+    if (!currentUser.user_metadata) currentUser.user_metadata = {};
+    currentUser.user_metadata.avatar_url = currentMember.avatar;
+    localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
   }
 
   coupleData.users[currentUser.id] = currentMember;
@@ -2194,21 +2200,29 @@ async function handleAvatarUpload(event) {
   }
 }
 
+// Helper to get consistent local YYYY-MM-DD
+function getLocalDateStr(dateInput) {
+  const d = dateInput ? new Date(dateInput) : new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // --- API STREAK (FLAME STREAK) SYSTEM ---
 function calculateFlameStreak() {
   const activeUser = coupleData.users[coupleData.activeUser] || { id: coupleData.activeUser || 'local-user', name: 'Kamu' };
-  const partnerUser = Object.values(coupleData.users).find((user) => user.id !== activeUser.id) || { id: 'partner', name: 'Pasangan' };
-
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateStr(new Date());
   
-  // Group moments by YYYY-MM-DD
+  // Group moments by local YYYY-MM-DD
   const momentsByDate = {};
   moments.forEach((m) => {
-    const dStr = (m.createdAt ? new Date(m.createdAt) : new Date()).toISOString().split('T')[0];
+    const dStr = getLocalDateStr(m.createdAt);
     if (!momentsByDate[dStr]) {
       momentsByDate[dStr] = { me: 0, partner: 0 };
     }
-    if (m.senderId === activeUser.id || m.senderName === activeUser.name) {
+    const isMe = (m.senderId === activeUser.id || m.senderId === currentUser?.id || (m.senderName && m.senderName.toLowerCase().includes(activeUser.name.toLowerCase().split(' ')[0])));
+    if (isMe) {
       momentsByDate[dStr].me++;
     } else {
       momentsByDate[dStr].partner++;
@@ -2222,17 +2236,17 @@ function calculateFlameStreak() {
   let streak = 0;
   let checkDate = new Date();
 
-  // If both sent today, include today in streak
+  // If both sent today, today counts as 1 (or +1 to past streak)
   if (bothSentToday) {
     streak++;
     checkDate.setDate(checkDate.getDate() - 1);
   } else {
-    // If not both sent today yet, count from yesterday backwards
+    // If not both sent today yet, check from yesterday backwards
     checkDate.setDate(checkDate.getDate() - 1);
   }
 
   while (true) {
-    const dStr = checkDate.toISOString().split('T')[0];
+    const dStr = getLocalDateStr(checkDate);
     const dayData = momentsByDate[dStr];
     if (dayData && dayData.me > 0 && dayData.partner > 0) {
       streak++;
@@ -2263,20 +2277,22 @@ function calculateFlameStreak() {
 function updateStreakUI() {
   const streak = calculateFlameStreak();
   
-  // Header Badge
+  // Header Badge & Button
   const headerStreakIcon = document.getElementById('headerStreakIcon');
   const headerStreakCount = document.getElementById('headerStreakCount');
+  const headerStreakBtn = headerStreakIcon ? headerStreakIcon.closest('button') : null;
   if (headerStreakIcon && headerStreakCount) {
     headerStreakCount.innerText = streak.streakCount;
     if (streak.todayStatus === 'active') {
+      // API MENYALA TERANG
       headerStreakIcon.innerText = 'local_fire_department';
-      headerStreakIcon.className = 'text-xl flame-active inline-block';
-    } else if (streak.todayStatus === 'pending') {
-      headerStreakIcon.innerText = '⏳';
-      headerStreakIcon.className = 'text-xl inline-block';
+      headerStreakIcon.className = 'material-symbols-outlined text-xl text-orange-500 flame-active inline-block';
+      if (headerStreakBtn) headerStreakBtn.className = 'flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-full neo-border font-label-bold text-xs neo-shadow-sm active-press border-orange-500 shadow-orange-100';
     } else {
+      // API PADAM (BELUM HIDUP ATAU MENUNGGU)
       headerStreakIcon.innerText = 'local_fire_department';
-      headerStreakIcon.className = 'text-xl inline-block';
+      headerStreakIcon.className = 'material-symbols-outlined text-xl inline-block text-slate-400 opacity-60';
+      if (headerStreakBtn) headerStreakBtn.className = 'flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-full neo-border font-label-bold text-xs neo-shadow-sm active-press text-slate-500';
     }
   }
 
@@ -2290,26 +2306,26 @@ function updateStreakUI() {
     if (streak.todayStatus === 'active') {
       homeStreakBadge.innerText = 'Menyala';
       homeStreakBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-orange-500 text-white neo-border-sm';
-      homeStreakSubtitle.innerText = 'Kalian berdua sudah kirim PAP hari ini! Pertahankan streak!';
+      homeStreakSubtitle.innerText = 'Kalian berdua sudah kirim PAP hari ini! Pertahankan api streak!';
       if (homeStreakFlameIcon) {
         homeStreakFlameIcon.innerText = 'local_fire_department';
         homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center neo-border-sm text-2xl flame-active shadow-sm';
       }
     } else if (streak.todayStatus === 'pending') {
-      homeStreakBadge.innerText = '⏳ Menunggu Pasangan';
+      homeStreakBadge.innerText = 'Menunggu Pasangan';
       homeStreakBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 neo-border-sm';
       homeStreakSubtitle.innerText = streak.meSentToday ? 'Kamu sudah PAP! Menunggu giliran pasangan.' : 'Pasangan sudah PAP! Yuk kirim PAP giliranmu!';
       if (homeStreakFlameIcon) {
         homeStreakFlameIcon.innerText = 'local_fire_department';
-        homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center neo-border-sm text-2xl shadow-sm';
+        homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-slate-300 text-slate-500 flex items-center justify-center neo-border-sm text-2xl shadow-sm';
       }
     } else {
       homeStreakBadge.innerText = 'Belum Hidup';
       homeStreakBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 neo-border-sm';
-      homeStreakSubtitle.innerText = 'Kirim PAP hari ini untuk mengaktifkan apinya!';
+      homeStreakSubtitle.innerText = 'Kirim PAP hari ini untuk menghidupkan apinya!';
       if (homeStreakFlameIcon) {
         homeStreakFlameIcon.innerText = 'local_fire_department';
-        homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-slate-400 text-white flex items-center justify-center neo-border-sm text-2xl shadow-sm';
+        homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-slate-300 text-slate-500 flex items-center justify-center neo-border-sm text-2xl shadow-sm';
       }
     }
   }
@@ -2832,7 +2848,9 @@ async function saveProfileChanges() {
     return;
   }
 
-  showToast('Menyimpan perubahan profil... ', 'info');
+  showToast('Menyimpan perubahan profil...', 'info');
+
+  let finalAvatar = pendingEditAvatar || (coupleData.users[coupleData.activeUser]?.avatar) || '';
 
   // Upload custom avatar image to Supabase Storage if uploaded from file
   if (pendingAvatarFile && isSupabaseReady() && currentUser) {
@@ -2848,7 +2866,7 @@ async function saveProfileChanges() {
       if (!uploadErr) {
         const { data: pubData } = supabase.storage.from('pap-photos').getPublicUrl(fileName);
         if (pubData?.publicUrl) {
-          pendingEditAvatar = pubData.publicUrl;
+          finalAvatar = pubData.publicUrl;
         }
       }
     } catch (e) {
@@ -2856,22 +2874,37 @@ async function saveProfileChanges() {
     }
   }
 
+  // Update in local coupleData
   if (coupleData.activeUser && coupleData.users[coupleData.activeUser]) {
     coupleData.users[coupleData.activeUser].name = newName;
-    if (pendingEditAvatar) coupleData.users[coupleData.activeUser].avatar = pendingEditAvatar;
+    coupleData.users[coupleData.activeUser].avatar = finalAvatar;
+  }
+  if (currentUser) {
+    if (coupleData.users[currentUser.id]) {
+      coupleData.users[currentUser.id].name = newName;
+      coupleData.users[currentUser.id].avatar = finalAvatar;
+    }
+    currentUser.name = newName;
+    currentUser.avatar = finalAvatar;
+    if (!currentUser.user_metadata) currentUser.user_metadata = {};
+    currentUser.user_metadata.full_name = newName;
+    currentUser.user_metadata.avatar_url = finalAvatar;
+    localStorage.setItem('octo_permanent_user', JSON.stringify(currentUser));
   }
 
   saveData();
 
-  // Save to Supabase
+  // Persist to Supabase Database
   const supabase = getSupabase();
   if (supabase && currentUser) {
     try {
-      await supabase.from('members').update({
+      await supabase.from('members').upsert({
+        id: currentUser.id,
+        couple_id: coupleData.id || 'couple-rio-nindya',
         name: newName,
-        avatar: pendingEditAvatar,
+        avatar: finalAvatar,
         updated_at: new Date().toISOString()
-      }).eq('id', currentUser.id);
+      });
     } catch(e) {
       console.warn('Gagal simpan profil ke Supabase:', e);
     }
@@ -2880,7 +2913,7 @@ async function saveProfileChanges() {
   closeEditProfileModal();
   updateUIForActiveUser();
   renderHomeView();
-  showToast('Profil berhasil diperbarui! ', 'check_circle');
+  showToast('Profil berhasil diperbarui!', 'check_circle');
 }
 
 // --- AGENDA & DEVICE INTERNAL CALENDAR INTEGRATION ---
