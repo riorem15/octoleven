@@ -222,7 +222,7 @@
         <div onclick="openMoodPickerModal()" class="bg-secondary-container neo-border rounded-xl p-3.5 neo-shadow-sm aspect-square flex flex-col justify-between cursor-pointer hover:bg-secondary-fixed transition-all active-press group">
           <div class="flex justify-between items-center">
             <div class="w-10 h-10 rounded-full bg-surface flex items-center justify-center neo-border-sm text-xl shadow-inner">
-              <span id="partnerMoodEmoji">🥰</span>
+              <span id="partnerMoodEmoji" class="material-symbols-outlined text-xl text-primary">favorite</span>
             </div>
             <span class="text-[10px] font-bold uppercase bg-surface px-2 py-0.5 rounded-full neo-border-sm">Mood</span>
           </div>
@@ -719,32 +719,98 @@
         
         <div id="stickerPillsContainer" class="flex gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
           <!-- Keseharian & Santai -->
-          <button type="button" data-cat="santai" onclick="selectSticker('Tidur 😴')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">😴 Tidur</button>
-          <button type="button" data-cat="santai" onclick="selectSticker('Makan 🍜')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🍜 Makan</button>
-          <button type="button" data-cat="santai" onclick="selectSticker('Nonton 🎬')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🎬 Nonton</button>
-          <button type="button" data-cat="santai" onclick="selectSticker('Main 🎮')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🎮 Main Game</button>
-          <button type="button" data-cat="santai" onclick="selectSticker('Rebahan 🛋️')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🛋️ Rebahan</button>
-          <button type="button" data-cat="santai" onclick="selectSticker('Masak 🍳')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🍳 Masak</button>
-          <button type="button" data-cat="santai" onclick="selectSticker('Mandi 🚿')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🚿 Mandi</button>
-          <button type="button" data-cat="santai" onclick="selectSticker('Ngopi ☕')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">☕ Ngopi</button>
+          <button type="button" data-cat="santai" data-sticker="Tidur" onclick="selectSticker('Tidur', 'bedtime')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-indigo-500">bedtime</span>
+            <span>Tidur</span>
+          </button>
+          <button type="button" data-cat="santai" data-sticker="Makan" onclick="selectSticker('Makan', 'restaurant')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-amber-600">restaurant</span>
+            <span>Makan</span>
+          </button>
+          <button type="button" data-cat="santai" data-sticker="Nonton" onclick="selectSticker('Nonton', 'movie')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-purple-600">movie</span>
+            <span>Nonton</span>
+          </button>
+          <button type="button" data-cat="santai" data-sticker="Main Game" onclick="selectSticker('Main Game', 'sports_esports')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-blue-600">sports_esports</span>
+            <span>Main Game</span>
+          </button>
+          <button type="button" data-cat="santai" data-sticker="Rebahan" onclick="selectSticker('Rebahan', 'weekend')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-teal-600">weekend</span>
+            <span>Rebahan</span>
+          </button>
+          <button type="button" data-cat="santai" data-sticker="Masak" onclick="selectSticker('Masak', 'skillet')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-orange-500">skillet</span>
+            <span>Masak</span>
+          </button>
+          <button type="button" data-cat="santai" data-sticker="Mandi" onclick="selectSticker('Mandi', 'shower')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-cyan-600">shower</span>
+            <span>Mandi</span>
+          </button>
+          <button type="button" data-cat="santai" data-sticker="Ngopi" onclick="selectSticker('Ngopi', 'coffee')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-amber-700">coffee</span>
+            <span>Ngopi</span>
+          </button>
 
           <!-- Aktivitas Luar & Produktif -->
-          <button type="button" data-cat="luar" onclick="selectSticker('Cafe ☕')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-secondary-container text-on-secondary-container whitespace-nowrap">☕ Cafe</button>
-          <button type="button" data-cat="luar" onclick="selectSticker('Jalan 🛵')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🛵 Jalan-Jalan</button>
-          <button type="button" data-cat="luar" onclick="selectSticker('Kerja 💻')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">💻 Kerja</button>
-          <button type="button" data-cat="luar" onclick="selectSticker('Kuliah 📚')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">📚 Kuliah</button>
-          <button type="button" data-cat="luar" onclick="selectSticker('Belajar 📖')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">📖 Belajar</button>
-          <button type="button" data-cat="luar" onclick="selectSticker('Olahraga 🏃')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🏃 Olahraga</button>
-          <button type="button" data-cat="luar" onclick="selectSticker('Nongkrong 🧋')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🧋 Nongkrong</button>
-          <button type="button" data-cat="luar" onclick="selectSticker('Belanja 🛍️')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🛍️ Belanja</button>
-          <button type="button" data-cat="luar" onclick="selectSticker('OTW 🚗')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🚗 OTW</button>
+          <button type="button" data-cat="luar" data-sticker="Cafe" onclick="selectSticker('Cafe', 'local_cafe')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-secondary-container text-on-secondary-container whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-amber-800">local_cafe</span>
+            <span>Cafe</span>
+          </button>
+          <button type="button" data-cat="luar" data-sticker="Jalan-Jalan" onclick="selectSticker('Jalan-Jalan', 'directions_walk')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-green-600">directions_walk</span>
+            <span>Jalan-Jalan</span>
+          </button>
+          <button type="button" data-cat="luar" data-sticker="Kerja" onclick="selectSticker('Kerja', 'work')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-blue-700">work</span>
+            <span>Kerja</span>
+          </button>
+          <button type="button" data-cat="luar" data-sticker="Kuliah" onclick="selectSticker('Kuliah', 'school')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-indigo-600">school</span>
+            <span>Kuliah</span>
+          </button>
+          <button type="button" data-cat="luar" data-sticker="Belajar" onclick="selectSticker('Belajar', 'menu_book')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-yellow-600">menu_book</span>
+            <span>Belajar</span>
+          </button>
+          <button type="button" data-cat="luar" data-sticker="Olahraga" onclick="selectSticker('Olahraga', 'fitness_center')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-emerald-600">fitness_center</span>
+            <span>Olahraga</span>
+          </button>
+          <button type="button" data-cat="luar" data-sticker="Nongkrong" onclick="selectSticker('Nongkrong', 'group')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-rose-600">group</span>
+            <span>Nongkrong</span>
+          </button>
+          <button type="button" data-cat="luar" data-sticker="Belanja" onclick="selectSticker('Belanja', 'shopping_bag')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-pink-600">shopping_bag</span>
+            <span>Belanja</span>
+          </button>
+          <button type="button" data-cat="luar" data-sticker="OTW" onclick="selectSticker('OTW', 'navigation')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-sky-600">navigation</span>
+            <span>OTW</span>
+          </button>
 
           <!-- Spesial & Emosi -->
-          <button type="button" data-cat="spesial" onclick="selectSticker('Kangen 🥺')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🥺 Kangen Banget</button>
-          <button type="button" data-cat="spesial" onclick="selectSticker('Cantik/Ganteng ✨')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">✨ OOTD / Cantik</button>
-          <button type="button" data-cat="spesial" onclick="selectSticker('Lagi Bareng Kamu 👩‍❤️‍👨')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">👩‍❤️‍👨 Bareng Kamu</button>
-          <button type="button" data-cat="spesial" onclick="selectSticker('Capek Banget 😮‍💨')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">😮‍💨 Capek Banget</button>
-          <button type="button" data-cat="spesial" onclick="selectSticker('Selfie 🤳')" class="sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap">🤳 Selfie Ceria</button>
+          <button type="button" data-cat="spesial" data-sticker="Kangen Banget" onclick="selectSticker('Kangen Banget', 'favorite')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-primary">favorite</span>
+            <span>Kangen Banget</span>
+          </button>
+          <button type="button" data-cat="spesial" data-sticker="OOTD" onclick="selectSticker('OOTD', 'styler')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-pink-500">styler</span>
+            <span>OOTD</span>
+          </button>
+          <button type="button" data-cat="spesial" data-sticker="Bareng Kamu" onclick="selectSticker('Bareng Kamu', 'volunteer_activism')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-rose-500">volunteer_activism</span>
+            <span>Bareng Kamu</span>
+          </button>
+          <button type="button" data-cat="spesial" data-sticker="Capek" onclick="selectSticker('Capek', 'sentiment_dissatisfied')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-slate-500">sentiment_dissatisfied</span>
+            <span>Capek</span>
+          </button>
+          <button type="button" data-cat="spesial" data-sticker="Selfie" onclick="selectSticker('Selfie', 'photo_camera')" class="sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-amber-500">photo_camera</span>
+            <span>Selfie</span>
+          </button>
         </div>
       </div>
 
@@ -788,51 +854,63 @@
       <p class="text-xs text-on-surface-variant">Pasangan kamu akan melihat status perasaanmu di Beranda aplikasinya.</p>
 
       <div class="grid grid-cols-2 gap-2.5">
-        <button onclick="setUserMood('🥰', 'Lagi bucin & kangen banget!')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
-          <span class="text-2xl">🥰</span>
+        <button onclick="setUserMood('favorite', 'Lagi bucin & kangen banget!', 'Bucin & Kangen')" class="p-3 bg-surface-container neo-border-sm rounded-2xl flex items-center gap-3 hover:bg-secondary-container transition-all active-press text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 neo-border-sm flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-xl">favorite</span>
+          </div>
           <div>
-            <div class="text-xs font-bold">Bucin & Kangen</div>
-            <div class="text-[10px] text-on-surface-variant">Penuh cinta</div>
+            <div class="text-xs font-extrabold text-on-background">Bucin & Kangen</div>
+            <div class="text-[10px] text-on-surface-variant font-medium">Penuh cinta</div>
           </div>
         </button>
 
-        <button onclick="setUserMood('😊', 'Happy & bersemangat hari ini!')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
-          <span class="text-2xl">😊</span>
+        <button onclick="setUserMood('sentiment_very_satisfied', 'Happy & bersemangat hari ini!', 'Bahagia')" class="p-3 bg-surface-container neo-border-sm rounded-2xl flex items-center gap-3 hover:bg-secondary-container transition-all active-press text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 neo-border-sm flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-xl">sentiment_very_satisfied</span>
+          </div>
           <div>
-            <div class="text-xs font-bold">Bahagia</div>
-            <div class="text-[10px] text-on-surface-variant">Hari menyenangkan</div>
+            <div class="text-xs font-extrabold text-on-background">Bahagia</div>
+            <div class="text-[10px] text-on-surface-variant font-medium">Hari menyenangkan</div>
           </div>
         </button>
 
-        <button onclick="setUserMood('😴', 'Ngantuk & butuh pelukan.')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
-          <span class="text-2xl">😴</span>
+        <button onclick="setUserMood('bedtime', 'Ngantuk & butuh pelukan.', 'Capek / Ngantuk')" class="p-3 bg-surface-container neo-border-sm rounded-2xl flex items-center gap-3 hover:bg-secondary-container transition-all active-press text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 neo-border-sm flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-xl">bedtime</span>
+          </div>
           <div>
-            <div class="text-xs font-bold">Capek / Ngantuk</div>
-            <div class="text-[10px] text-on-surface-variant">Butuh istirahat</div>
+            <div class="text-xs font-extrabold text-on-background">Capek / Ngantuk</div>
+            <div class="text-[10px] text-on-surface-variant font-medium">Butuh istirahat</div>
           </div>
         </button>
 
-        <button onclick="setUserMood('🍜', 'Laper banget, ayo makan bareng!')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
-          <span class="text-2xl">🍜</span>
+        <button onclick="setUserMood('restaurant', 'Laper banget, ayo makan bareng!', 'Laper')" class="p-3 bg-surface-container neo-border-sm rounded-2xl flex items-center gap-3 hover:bg-secondary-container transition-all active-press text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 neo-border-sm flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-xl">restaurant</span>
+          </div>
           <div>
-            <div class="text-xs font-bold">Laper</div>
-            <div class="text-[10px] text-on-surface-variant">Mau jajan</div>
+            <div class="text-xs font-extrabold text-on-background">Laper</div>
+            <div class="text-[10px] text-on-surface-variant font-medium">Mau jajan</div>
           </div>
         </button>
 
-        <button onclick="setUserMood('🥺', 'Lagi sedih & pengen ditemenin.')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
-          <span class="text-2xl">🥺</span>
+        <button onclick="setUserMood('sentiment_dissatisfied', 'Lagi sedih & pengen ditemenin.', 'Manja / Sedih')" class="p-3 bg-surface-container neo-border-sm rounded-2xl flex items-center gap-3 hover:bg-secondary-container transition-all active-press text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 neo-border-sm flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-xl">sentiment_dissatisfied</span>
+          </div>
           <div>
-            <div class="text-xs font-bold">Manja / Sedih</div>
-            <div class="text-[10px] text-on-surface-variant">Butuh dihibur</div>
+            <div class="text-xs font-extrabold text-on-background">Manja / Sedih</div>
+            <div class="text-[10px] text-on-surface-variant font-medium">Butuh dihibur</div>
           </div>
         </button>
 
-        <button onclick="setUserMood('☕', 'Fokus nugas & produktif.')" class="p-3 bg-surface-container neo-border-sm rounded-xl flex items-center gap-2.5 hover:bg-secondary-container transition-colors active-press text-left">
-          <span class="text-2xl">☕</span>
+        <button onclick="setUserMood('laptop_chromebook', 'Fokus nugas & produktif.', 'Fokus Kerja')" class="p-3 bg-surface-container neo-border-sm rounded-2xl flex items-center gap-3 hover:bg-secondary-container transition-all active-press text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 neo-border-sm flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-xl">laptop_chromebook</span>
+          </div>
           <div>
-            <div class="text-xs font-bold">Fokus Kerja</div>
-            <div class="text-[10px] text-on-surface-variant">Lagi produktif</div>
+            <div class="text-xs font-extrabold text-on-background">Fokus Kerja</div>
+            <div class="text-[10px] text-on-surface-variant font-medium">Lagi produktif</div>
           </div>
         </button>
       </div>

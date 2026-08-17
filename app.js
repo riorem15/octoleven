@@ -851,7 +851,9 @@ function updateUIForActiveUser() {
   const partnerMoodText = document.getElementById('partnerMoodText');
   const partnerMoodLabel = document.getElementById('partnerMoodLabel');
   if (partnerMoodEmoji && partnerMoodText) {
-    partnerMoodEmoji.innerText = partnerUser.moodEmoji || '🥰';
+    const iconName = MOOD_ICON_MAP[partnerUser?.moodEmoji] || 'favorite';
+    partnerMoodEmoji.className = 'material-symbols-outlined text-xl text-primary';
+    partnerMoodEmoji.innerText = iconName;
     partnerMoodText.innerText = `"${partnerUser.moodText || 'Belum ada status'}"`;
     if (partnerMoodLabel) partnerMoodLabel.innerText = `Status ${partnerName}`;
   }
@@ -1001,8 +1003,9 @@ function renderFeed(filter = 'all') {
             <button onclick="downloadPapImage('${moment.image}', '${encodeURIComponent(moment.caption || 'pap')}')" class="w-7 h-7 rounded-full bg-surface-container neo-border-sm flex items-center justify-center text-on-surface hover:bg-secondary-container active-press shadow-sm transition-colors" title="Download Foto PAP">
               <span class="material-symbols-outlined text-sm">download</span>
             </button>
-            <span class="bg-surface-container px-2.5 py-1 rounded-full neo-border-sm font-label-bold text-[11px] text-primary font-bold">
-              ${moment.sticker || (isVideo ? 'Video 🎥' : 'PAP ✨')}
+            <span class="bg-surface-container px-2.5 py-1 rounded-full neo-border-sm font-label-bold text-[11px] text-primary font-bold flex items-center gap-1">
+              <span class="material-symbols-outlined text-xs">${getStickerIcon(moment.sticker)}</span>
+              <span>${cleanStickerLabel(moment.sticker)}</span>
             </span>
           </div>
         </div>
@@ -1659,23 +1662,86 @@ function pickSamplePhoto(index) {
   vibrate(30);
 }
 
-function selectSticker(name) {
+const MOOD_ICON_MAP = {
+  'favorite': 'favorite',
+  'sentiment_very_satisfied': 'sentiment_very_satisfied',
+  'bedtime': 'bedtime',
+  'restaurant': 'restaurant',
+  'sentiment_dissatisfied': 'sentiment_dissatisfied',
+  'laptop_chromebook': 'laptop_chromebook',
+  '🥰': 'favorite',
+  '😊': 'sentiment_very_satisfied',
+  '😴': 'bedtime',
+  '🍜': 'restaurant',
+  '🥺': 'sentiment_dissatisfied',
+  '☕': 'local_cafe'
+};
+
+const STICKER_ICON_MAP = {
+  'Tidur': 'bedtime',
+  'Makan': 'restaurant',
+  'Nonton': 'movie',
+  'Main Game': 'sports_esports',
+  'Main': 'sports_esports',
+  'Rebahan': 'weekend',
+  'Masak': 'skillet',
+  'Mandi': 'shower',
+  'Ngopi': 'coffee',
+  'Cafe': 'local_cafe',
+  'Jalan-Jalan': 'directions_walk',
+  'Jalan': 'directions_walk',
+  'Kerja': 'work',
+  'Kuliah': 'school',
+  'Belajar': 'menu_book',
+  'Olahraga': 'fitness_center',
+  'Nongkrong': 'group',
+  'Belanja': 'shopping_bag',
+  'OTW': 'navigation',
+  'Kangen Banget': 'favorite',
+  'Kangen': 'favorite',
+  'OOTD': 'styler',
+  'Cantik/Ganteng': 'styler',
+  'Bareng Kamu': 'volunteer_activism',
+  'Lagi Bareng Kamu': 'volunteer_activism',
+  'Capek': 'sentiment_dissatisfied',
+  'Capek Banget': 'sentiment_dissatisfied',
+  'Selfie': 'photo_camera'
+};
+
+function getStickerIcon(stickerName) {
+  if (!stickerName) return 'photo_camera';
+  const cleanName = cleanStickerLabel(stickerName);
+  return STICKER_ICON_MAP[cleanName] || STICKER_ICON_MAP[stickerName] || 'label';
+}
+
+function cleanStickerLabel(raw) {
+  if (!raw) return 'PAP';
+  return raw.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim() || raw;
+}
+
+let selectedStickerIcon = 'local_cafe';
+
+function selectSticker(name, iconName = 'label') {
   selectedSticker = name;
+  selectedStickerIcon = iconName || getStickerIcon(name);
   updateStickerButtons();
 
   const badgeOverlay = document.getElementById('previewBadgeOverlay');
   if (badgeOverlay) {
-    badgeOverlay.innerText = selectedSticker;
+    badgeOverlay.innerHTML = `<span class="material-symbols-outlined text-xs">${selectedStickerIcon}</span> <span>${selectedSticker}</span>`;
+    badgeOverlay.classList.remove('hidden');
+    badgeOverlay.className = 'absolute top-3 left-3 sticker-badge bg-secondary-container text-on-secondary-container text-xs px-2.5 py-1 z-10 font-bold flex items-center gap-1 shadow-sm';
   }
   vibrate(15);
 }
 
 function updateStickerButtons() {
   document.querySelectorAll('.sticker-btn').forEach(btn => {
-    if (btn.innerText.includes(selectedSticker)) {
-      btn.className = 'sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-secondary-container text-on-secondary-container shadow-sm';
+    const stickerAttr = btn.getAttribute('data-sticker') || btn.innerText;
+    if (stickerAttr.includes(selectedSticker) || btn.innerText.includes(selectedSticker)) {
+      btn.className = 'sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-secondary-container text-on-secondary-container shadow-sm flex items-center gap-1.5 whitespace-nowrap';
     } else {
-      btn.className = 'sticker-btn px-2.5 py-1 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors';
+      btn.className = 'sticker-btn px-3 py-1.5 rounded-full neo-border-sm text-xs font-bold bg-surface hover:bg-secondary-container transition-colors flex items-center gap-1.5 whitespace-nowrap';
     }
   });
 }
@@ -1803,10 +1869,10 @@ function closeMoodPickerModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-async function setUserMood(emoji, text) {
+async function setUserMood(iconName, text, label = '') {
   const currentKey = coupleData.activeUser;
   const activeUser = coupleData.users[currentKey] || { id: currentUser?.id, name: 'Kamu' };
-  activeUser.moodEmoji = emoji;
+  activeUser.moodEmoji = iconName;
   activeUser.moodText = text;
   saveData();
 
@@ -1814,7 +1880,7 @@ async function setUserMood(emoji, text) {
   playSound('toast');
   vibrate(30);
   triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
-  showToast(`Mood kamu diperbarui: ${emoji} "${text}"`, 'mood');
+  showToast(`Mood kamu diperbarui: "${text}" ✨`, 'mood');
   updateUIForActiveUser();
 
   if (isSupabaseReady() && currentUser) {
@@ -1823,16 +1889,16 @@ async function setUserMood(emoji, text) {
       id: currentUser.id,
       couple_id: coupleData.id,
       name: activeUser.name || 'Pengguna',
-      mood_emoji: emoji,
+      mood_emoji: iconName,
       mood_text: text,
       updated_at: new Date().toISOString()
     });
 
     // Kirim Push Notification update mood
-    sendPushNotification('Mood Pasangan Diperbarui ✨', `${activeUser.name} sekarang lagi ${emoji} ${text}`, {
+    sendPushNotification('Mood Pasangan Diperbarui ✨', `${activeUser.name} sekarang lagi: ${text}`, {
       event: 'mood',
       senderName: activeUser.name,
-      tagText: emoji,
+      tagText: label || 'Mood',
       caption: text
     });
   }
