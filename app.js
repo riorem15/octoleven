@@ -1031,17 +1031,21 @@ function renderFeed(filter = 'all') {
         </p>
 
         <div class="flex items-center gap-2 flex-wrap pt-1 border-t border-outline-variant/40">
-          <button onclick="handleFeedReaction('${moment.id}', '', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-primary-fixed-dim">
-            <span></span> <span class="font-bold">${reactions['love'] || 0}</span>
+          <button onclick="handleFeedReaction('${moment.id}', 'love', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1.5 font-label-bold text-xs hover:bg-primary-fixed-dim">
+            <span class="material-symbols-outlined text-sm text-primary" style="font-variation-settings: 'FILL' 1;">favorite</span>
+            <span class="font-bold">${reactions['love'] || 0}</span>
           </button>
-          <button onclick="handleFeedReaction('${moment.id}', '', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-secondary-fixed">
-            <span></span> <span class="font-bold">${reactions['cute'] || 0}</span>
+          <button onclick="handleFeedReaction('${moment.id}', 'cute', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1.5 font-label-bold text-xs hover:bg-secondary-fixed">
+            <span class="material-symbols-outlined text-sm text-pink-500">mood</span>
+            <span class="font-bold">${reactions['cute'] || 0}</span>
           </button>
-          <button onclick="handleFeedReaction('${moment.id}', '', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-tertiary-fixed">
-            <span></span> <span class="font-bold">${reactions['laugh'] || 0}</span>
+          <button onclick="handleFeedReaction('${moment.id}', 'laugh', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1.5 font-label-bold text-xs hover:bg-tertiary-fixed">
+            <span class="material-symbols-outlined text-sm text-amber-500">sentiment_very_satisfied</span>
+            <span class="font-bold">${reactions['laugh'] || 0}</span>
           </button>
-          <button onclick="handleFeedReaction('${moment.id}', '', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-primary-fixed-dim">
-            <span></span> <span class="font-bold">${reactions['fire'] || 0}</span>
+          <button onclick="handleFeedReaction('${moment.id}', 'fire', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1.5 font-label-bold text-xs hover:bg-primary-fixed-dim">
+            <span class="material-symbols-outlined text-sm text-orange-500">local_fire_department</span>
+            <span class="font-bold">${reactions['fire'] || 0}</span>
           </button>
         </div>
 
@@ -2321,7 +2325,7 @@ function updateStreakUI() {
       kitaStreakStatusPill.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-orange-500 text-white neo-border-sm';
       if (kitaStreakIconContainer) kitaStreakIconContainer.className = 'w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center neo-border-sm text-xl flame-active shadow-sm';
     } else if (streak.todayStatus === 'pending') {
-      kitaStreakStatusPill.innerText = '⏳ Menunggu Pasangan';
+      kitaStreakStatusPill.innerText = 'Menunggu Pasangan';
       kitaStreakStatusPill.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 neo-border-sm';
       if (kitaStreakIconContainer) kitaStreakIconContainer.className = 'w-10 h-10 rounded-xl bg-amber-400 text-white flex items-center justify-center neo-border-sm text-xl shadow-sm';
     } else {
@@ -2338,15 +2342,15 @@ function updateStreakUI() {
   const flameStatusPartnerBadge = document.getElementById('flameStatusPartnerBadge');
   if (flameStatusMeText && flameStatusPartnerText) {
     if (streak.meSentToday) {
-      flameStatusMeText.innerText = 'Sudah PAP';
-      flameStatusMeText.className = 'text-emerald-600 font-bold';
+      flameStatusMeText.innerHTML = '<span class="material-symbols-outlined text-xs text-green-600">check_circle</span> <span>Sudah PAP</span>';
+      flameStatusMeText.className = 'text-green-700 flex items-center gap-1 font-bold';
       if (flameStatusMeBadge) {
         flameStatusMeBadge.innerText = '1/1 PAP';
         flameStatusMeBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold';
       }
     } else {
-      flameStatusMeText.innerText = 'Belum PAP';
-      flameStatusMeText.className = 'text-red-600 font-bold';
+      flameStatusMeText.innerHTML = '<span class="material-symbols-outlined text-xs text-red-500">cancel</span> <span>Belum PAP</span>';
+      flameStatusMeText.className = 'text-red-600 flex items-center gap-1 font-bold';
       if (flameStatusMeBadge) {
         flameStatusMeBadge.innerText = '0/1 PAP';
         flameStatusMeBadge.className = 'text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold';
@@ -2354,15 +2358,15 @@ function updateStreakUI() {
     }
 
     if (streak.partnerSentToday) {
-      flameStatusPartnerText.innerText = 'Sudah PAP';
-      flameStatusPartnerText.className = 'text-emerald-600 font-bold';
+      flameStatusPartnerText.innerHTML = '<span class="material-symbols-outlined text-xs text-green-600">check_circle</span> <span>Sudah PAP</span>';
+      flameStatusPartnerText.className = 'text-green-700 flex items-center gap-1 font-bold';
       if (flameStatusPartnerBadge) {
         flameStatusPartnerBadge.innerText = '1/1 PAP';
         flameStatusPartnerBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold';
       }
     } else {
-      flameStatusPartnerText.innerText = 'Belum PAP';
-      flameStatusPartnerText.className = 'text-red-600 font-bold';
+      flameStatusPartnerText.innerHTML = '<span class="material-symbols-outlined text-xs text-red-500">cancel</span> <span>Belum PAP</span>';
+      flameStatusPartnerText.className = 'text-red-600 flex items-center gap-1 font-bold';
       if (flameStatusPartnerBadge) {
         flameStatusPartnerBadge.innerText = '0/1 PAP';
         flameStatusPartnerBadge.className = 'text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold';
@@ -2380,7 +2384,7 @@ function updateStreakUI() {
       streakModalStatusText.innerText = 'Api Berkobar! Kedua pasangan sudah PAP hari ini.';
       streakModalStatusText.className = 'text-xs text-orange-600 font-bold';
     } else if (streak.todayStatus === 'pending') {
-      streakModalStatusText.innerText = '⏳ Api Sedang Menunggu! 1 pasangan belum PAP.';
+      streakModalStatusText.innerText = 'Api Sedang Menunggu! 1 pasangan belum PAP.';
       streakModalStatusText.className = 'text-xs text-amber-600 font-bold';
     } else {
       streakModalStatusText.innerText = 'Api Padam! Belum ada yang kirim PAP hari ini.';
