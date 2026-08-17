@@ -773,15 +773,25 @@ function switchTab(tabId) {
 // --- Update UI Labels ---
 function updateUIForActiveUser() {
   const activeUser = coupleData.users[coupleData.activeUser] || {
-    id: coupleData.activeUser || 'local-user',
-    name: 'Pengguna',
+    id: currentUser?.id || coupleData.activeUser || 'user-rio-123',
+    name: currentUser?.user_metadata?.full_name || 'Rio Refki Maulana',
     avatar: '',
     moodEmoji: '🥰',
     moodText: 'Lagi mikirin kamu!'
   };
-  const partnerUser = Object.values(coupleData.users).find((user) => user.id !== activeUser.id);
+
+  // Prioritize finding the actual couple partner (Rio <-> Nindya)
+  let partnerUser = Object.values(coupleData.users).find((user) => user.id !== activeUser.id && user.id !== currentUser?.id);
+  if (!partnerUser) {
+    if (activeUser.name.toLowerCase().includes('rio')) {
+      partnerUser = coupleData.users['user-nindya-123'] || { id: 'user-nindya-123', name: 'Nindya Rachmawati', avatar: '' };
+    } else {
+      partnerUser = coupleData.users['user-rio-123'] || { id: 'user-rio-123', name: 'Rio Refki Maulana', avatar: '' };
+    }
+  }
+
   const partnerName = partnerUser?.name || 'Pasangan';
-  const coupleTitle = partnerUser ? `${activeUser.name} & ${partnerUser.name}` : `${activeUser.name} (Menunggu Pasangan)`;
+  const coupleTitle = `${activeUser.name} & ${partnerName}`;
 
   const headerAvatar = document.getElementById('headerUserAvatar');
   const activeUserLabel = document.getElementById('activeUserLabel');
@@ -797,7 +807,7 @@ function updateUIForActiveUser() {
   if (headerAvatar) headerAvatar.src = finalActiveAvatar;
   if (activeUserLabel) activeUserLabel.innerText = coupleTitle;
 
-  // Tab Kita Profile Cards (Gambar 2 Layout)
+  // Tab Kita Profile Cards
   const coupleAvatar1 = document.getElementById('coupleAvatar1');
   const coupleName1 = document.getElementById('coupleName1');
   const coupleAvatar2 = document.getElementById('coupleAvatar2');
@@ -810,7 +820,7 @@ function updateUIForActiveUser() {
 
   const homeGreeting = document.getElementById('homeGreetingText');
   if (homeGreeting) {
-    homeGreeting.innerText = `Hai ${activeUser.name}, kangen ya? ❤️`;
+    homeGreeting.innerText = `Hai ${activeUser.name}! ✨`;
   }
 
   // Days Together & Tanggal Jadian
@@ -2478,9 +2488,20 @@ function checkAnniversaryNotification() {
   }
 }
 
-// --- PROFILE EDITING (EDIT PROFIL KAMU) ---
+// --- PROFILE EDITING (EDIT PROFIL KAMU) & CROPPER ---
 let pendingEditAvatar = '';
 let pendingAvatarFile = null;
+
+let cropperState = {
+  img: null,
+  scale: 1,
+  panX: 0,
+  panY: 0,
+  rotation: 0,
+  isDragging: false,
+  startX: 0,
+  startY: 0
+};
 
 function openEditProfileModal() {
   const activeUser = coupleData.users[coupleData.activeUser] || { name: currentUser?.name || 'Rio', avatar: '' };
@@ -2515,28 +2536,221 @@ function setProfileAvatarPreset(seed) {
   if (avatarPreview) avatarPreview.src = pendingEditAvatar;
 }
 
+// Interactive Gallery Picker & Native Camera Fallback
+async function triggerProfileAvatarPicker() {
+  // 1. Try native Capacitor Camera gallery picker on Android if available
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) {
+    try {
+      const Camera = window.Capacitor.Plugins.Camera;
+      const photo = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: 'dataUrl',
+        source: 'PHOTOS'
+      });
+      if (photo && photo.dataUrl) {
+        openAvatarCropper(photo.dataUrl);
+        return;
+      }
+    } catch (capErr) {
+      console.log('Capacitor camera picker fallback to standard file input:', capErr);
+    }
+  }
+
+  // 2. Standard Web & WebView Fallback
+  const input = document.getElementById('profileAvatarFileInput');
+  if (input) {
+    input.click();
+  }
+}
+
 async function handleProfileAvatarSelected(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
   try {
-    showToast('Memproses foto profil...', 'info');
-    // Compress and convert to standard JPEG (supports JPG, PNG, HEIC, WEBP, etc.)
-    const compressed = await compressImage(file, 640, 640, 0.85);
-    if (compressed.dataUrl) {
-      pendingEditAvatar = compressed.dataUrl;
-      pendingAvatarFile = compressed.blob || (compressed.dataUrl.startsWith('data:') ? dataURItoBlob(compressed.dataUrl) : file);
-      const avatarPreview = document.getElementById('profileEditAvatarPreview');
-      if (avatarPreview) avatarPreview.src = pendingEditAvatar;
-      showToast('Foto profil dipilih! Klik "Simpan Profil". 📸✨', 'check_circle');
-    }
+    showToast('Memuat foto untuk dipotong...', 'info');
+    const objectUrl = URL.createObjectURL(file);
+    openAvatarCropper(objectUrl);
   } catch (err) {
-    console.error('Gagal memproses foto profil:', err);
+    console.error('Gagal membaca file gambar:', err);
     showToast('Gagal memuat format gambar.', 'error');
   }
 
-  // Reset file input value
   event.target.value = '';
+}
+
+function openAvatarCropper(imageSrc) {
+  const modal = document.getElementById('avatarCropperModal');
+  const canvas = document.getElementById('avatarCropperCanvas');
+  const slider = document.getElementById('cropperZoomSlider');
+  if (!modal || !canvas) return;
+
+  const image = new Image();
+  image.crossOrigin = 'anonymous';
+  image.onload = () => {
+    cropperState.img = image;
+    cropperState.scale = 1;
+    cropperState.panX = 0;
+    cropperState.panY = 0;
+    cropperState.rotation = 0;
+    if (slider) slider.value = '1';
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    initCropperEvents();
+    drawCropperCanvas();
+  };
+  image.onerror = () => {
+    showToast('Gagal memuat gambar untuk di-crop.', 'error');
+  };
+  image.src = imageSrc;
+}
+
+function closeAvatarCropper() {
+  const modal = document.getElementById('avatarCropperModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function drawCropperCanvas() {
+  const canvas = document.getElementById('avatarCropperCanvas');
+  if (!canvas || !cropperState.img) return;
+
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const size = Math.min(rect.width || 300, rect.height || 300);
+
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, size, size);
+
+  ctx.save();
+  ctx.translate(size / 2 + cropperState.panX, size / 2 + cropperState.panY);
+  ctx.rotate((cropperState.rotation * Math.PI) / 180);
+  ctx.scale(cropperState.scale, cropperState.scale);
+
+  // Compute aspect ratio fit
+  const img = cropperState.img;
+  const baseScale = Math.max(size / img.width, size / img.height);
+  const drawW = img.width * baseScale;
+  const drawH = img.height * baseScale;
+
+  ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+  ctx.restore();
+}
+
+function handleCropperZoom(val) {
+  cropperState.scale = parseFloat(val) || 1;
+  drawCropperCanvas();
+}
+
+function rotateCropperImage() {
+  cropperState.rotation = (cropperState.rotation + 90) % 360;
+  drawCropperCanvas();
+  vibrate(20);
+}
+
+function resetCropperTransform() {
+  cropperState.scale = 1;
+  cropperState.panX = 0;
+  cropperState.panY = 0;
+  cropperState.rotation = 0;
+  const slider = document.getElementById('cropperZoomSlider');
+  if (slider) slider.value = '1';
+  drawCropperCanvas();
+}
+
+let cropperEventsAttached = false;
+function initCropperEvents() {
+  if (cropperEventsAttached) return;
+  cropperEventsAttached = true;
+
+  const container = document.getElementById('cropperCanvasContainer');
+  if (!container) return;
+
+  const startDrag = (x, y) => {
+    cropperState.isDragging = true;
+    cropperState.startX = x - cropperState.panX;
+    cropperState.startY = y - cropperState.panY;
+  };
+
+  const doDrag = (x, y) => {
+    if (!cropperState.isDragging) return;
+    cropperState.panX = x - cropperState.startX;
+    cropperState.panY = y - cropperState.startY;
+    drawCropperCanvas();
+  };
+
+  const endDrag = () => {
+    cropperState.isDragging = false;
+  };
+
+  // Mouse Events
+  container.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+  window.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
+  window.addEventListener('mouseup', endDrag);
+
+  // Touch Events
+  container.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      startDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && cropperState.isDragging) {
+      doDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', endDrag);
+}
+
+function applyAvatarCrop() {
+  if (!cropperState.img) return;
+
+  // Render high-res 500x500 output canvas
+  const outputCanvas = document.createElement('canvas');
+  const outSize = 500;
+  outputCanvas.width = outSize;
+  outputCanvas.height = outSize;
+  const ctx = outputCanvas.getContext('2d');
+
+  const previewCanvas = document.getElementById('avatarCropperCanvas');
+  const previewSize = previewCanvas ? (previewCanvas.width / (window.devicePixelRatio || 1)) : 300;
+  const ratio = outSize / previewSize;
+
+  ctx.save();
+  ctx.translate(outSize / 2 + (cropperState.panX * ratio), outSize / 2 + (cropperState.panY * ratio));
+  ctx.rotate((cropperState.rotation * Math.PI) / 180);
+  ctx.scale(cropperState.scale * ratio, cropperState.scale * ratio);
+
+  const img = cropperState.img;
+  const baseScale = Math.max(previewSize / img.width, previewSize / img.height);
+  const drawW = img.width * baseScale;
+  const drawH = img.height * baseScale;
+
+  ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+  ctx.restore();
+
+  const croppedDataUrl = outputCanvas.toDataURL('image/jpeg', 0.90);
+  pendingEditAvatar = croppedDataUrl;
+  pendingAvatarFile = dataURItoBlob(croppedDataUrl);
+
+  const previewEl = document.getElementById('profileEditAvatarPreview');
+  if (previewEl) previewEl.src = croppedDataUrl;
+
+  closeAvatarCropper();
+  playSound('snap');
+  vibrate(30);
+  showToast('Foto profil dipotong! Klik "Simpan Profil". ✨', 'check_circle');
 }
 
 async function saveProfileChanges() {

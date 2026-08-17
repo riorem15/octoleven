@@ -150,7 +150,6 @@
           <h1 class="font-display-lg text-2xl text-primary font-extrabold tracking-tight leading-none">Octoleven</h1>
           <p class="text-[11px] font-bold text-on-surface-variant flex items-center gap-1">
             <span id="activeUserLabel">Rio (Kamu)</span>
-            <span class="text-xs">❤️</span>
           </p>
         </div>
       </div>
@@ -1000,20 +999,20 @@
         </div>
 
         <div class="flex flex-col items-center gap-2.5">
-          <label for="profileAvatarFileInput" class="relative group cursor-pointer active-press">
+          <div onclick="triggerProfileAvatarPicker()" class="relative group cursor-pointer active-press">
             <div class="w-20 h-20 rounded-full overflow-hidden neo-border bg-primary-container shadow-sm">
               <img id="profileEditAvatarPreview" class="w-full h-full object-cover" src="" alt="Avatar"/>
             </div>
             <div class="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-container text-white rounded-full neo-border-sm flex items-center justify-center shadow-sm">
               <span class="material-symbols-outlined text-sm">photo_camera</span>
             </div>
-          </label>
+          </div>
           
-          <label for="profileAvatarFileInput" class="px-3.5 py-2 bg-secondary-container text-on-secondary-container rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1.5 active-press cursor-pointer hover:bg-secondary-container/80 transition-colors shadow-sm">
+          <button type="button" onclick="triggerProfileAvatarPicker()" class="px-3.5 py-2 bg-secondary-container text-on-secondary-container rounded-xl neo-border-sm font-label-bold text-xs flex items-center gap-1.5 active-press cursor-pointer hover:bg-secondary-container/80 transition-colors shadow-sm">
             <span class="material-symbols-outlined text-sm">photo_library</span>
             <span>Ganti Foto dari Galeri</span>
-            <input type="file" id="profileAvatarFileInput" accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp" class="hidden" onchange="handleProfileAvatarSelected(event)"/>
-          </label>
+          </button>
+          <input type="file" id="profileAvatarFileInput" accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp" class="hidden" onchange="handleProfileAvatarSelected(event)"/>
 
           <span class="text-[11px] text-on-surface-variant font-medium mt-1">Atau pilih avatar karakter:</span>
           
@@ -1037,6 +1036,67 @@
           <button type="button" onclick="saveProfileChanges()" class="flex-[2] py-3 bg-secondary-container text-on-secondary-container neo-border rounded-xl font-label-bold text-xs flex items-center justify-center gap-1.5 active-press hover:bg-secondary transition-colors">
             <span class="material-symbols-outlined text-base">check</span>
             <span>Simpan Profil</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================================================================
+         MODAL: ATUR & POTONG (CROP) FOTO PROFIL
+         ================================================================ -->
+    <div id="avatarCropperModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+      <div class="bg-surface w-full max-w-sm rounded-2xl neo-border neo-shadow-lg p-5 flex flex-col gap-3.5 animate-scaleUp">
+        
+        <div class="flex justify-between items-center border-b-2 border-on-background pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-xl">crop</span>
+            <h3 class="font-headline-md text-base font-extrabold text-on-background">Atur & Potong Foto Profil</h3>
+          </div>
+          <button onclick="closeAvatarCropper()" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center neo-border-sm active-press">
+            <span class="material-symbols-outlined text-sm">close</span>
+          </button>
+        </div>
+
+        <p class="text-[11px] text-on-surface-variant font-medium text-center">
+          Geser foto untuk menyesuaikan posisi di dalam lingkaran:
+        </p>
+
+        <!-- Interactive Canvas Area -->
+        <div class="relative w-full aspect-square rounded-2xl overflow-hidden neo-border bg-black flex items-center justify-center cursor-move touch-none select-none" id="cropperCanvasContainer">
+          <canvas id="avatarCropperCanvas" class="w-full h-full object-contain"></canvas>
+          <!-- Circular Mask Guide Overlay -->
+          <div class="absolute inset-0 pointer-events-none border-4 border-primary/80 rounded-full shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"></div>
+        </div>
+
+        <!-- Zoom & Rotation Controls -->
+        <div class="space-y-2 pt-1">
+          <div class="flex items-center justify-between gap-3 bg-surface-container rounded-xl p-2 neo-border-sm">
+            <span class="material-symbols-outlined text-sm text-on-surface-variant">zoom_out</span>
+            <input type="range" id="cropperZoomSlider" min="0.5" max="3" step="0.05" value="1" class="w-full accent-primary cursor-pointer" oninput="handleCropperZoom(this.value)"/>
+            <span class="material-symbols-outlined text-sm text-on-surface-variant">zoom_in</span>
+          </div>
+
+          <div class="flex justify-center gap-2">
+            <button type="button" onclick="rotateCropperImage()" class="px-3 py-1.5 bg-surface neo-border-sm rounded-xl text-xs font-bold flex items-center gap-1 active-press hover:bg-secondary-container transition-colors">
+              <span class="material-symbols-outlined text-sm">rotate_right</span>
+              <span>Putar 90°</span>
+            </button>
+            <button type="button" onclick="resetCropperTransform()" class="px-3 py-1.5 bg-surface neo-border-sm rounded-xl text-xs font-bold flex items-center gap-1 active-press hover:bg-secondary-container transition-colors">
+              <span class="material-symbols-outlined text-sm">restart_alt</span>
+              <span>Reset</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-2 pt-1">
+          <button type="button" onclick="closeAvatarCropper()" class="flex-1 py-2.5 bg-surface neo-border rounded-xl font-label-bold text-xs active-press">
+            Batal
+          </button>
+          <button type="button" onclick="applyAvatarCrop()" class="flex-[2] py-2.5 bg-primary-container text-white neo-border rounded-xl font-label-bold text-xs flex items-center justify-center gap-1.5 active-press hover:opacity-90 transition-opacity">
+            <span class="material-symbols-outlined text-base">check</span>
+            <span>Terapkan Foto</span>
           </button>
         </div>
 
