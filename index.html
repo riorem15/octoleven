@@ -95,8 +95,8 @@
   <!-- ==================== ONE-TIME LOGIN SCREEN OVERLAY ==================== -->
   <div id="loginScreen" class="fixed inset-0 z-[100] bg-surface flex flex-col items-center justify-center p-6 text-center animate-fadeIn overflow-y-auto hidden">
     <div class="max-w-xs w-full space-y-5 my-auto">
-      <div class="w-20 h-20 mx-auto bg-primary-container rounded-3xl neo-border neo-shadow flex items-center justify-center rotate-3">
-        <span class="text-4xl">❤️</span>
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-primary text-white flex items-center justify-center neo-border neo-shadow-sm mb-1 rotate-3">
+        <span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings: 'FILL' 1;">favorite</span>
       </div>
       <div>
         <h1 class="font-display-lg text-3xl text-primary font-extrabold tracking-tight">Octoleven</h1>
@@ -120,7 +120,7 @@
         </div>
 
         <button type="button" id="authSubmitBtn" onclick="handleLoginSubmit()" class="w-full py-3 bg-primary-container text-white neo-border rounded-xl font-label-bold text-xs font-bold neo-shadow-sm active-press mt-2 hover:bg-primary transition-colors">
-          Masuk ke Ruang Pasangan ❤️
+          Masuk ke Ruang Pasangan
         </button>
       </div>
     </div>
@@ -158,7 +158,7 @@
       <div class="flex items-center gap-2">
         <!-- Flame Streak Badge Button -->
         <button onclick="openStreakInfoModal()" id="headerStreakBadge" title="Status Api Streak Pasangan" class="h-11 px-3 flex items-center justify-center gap-1.5 neo-border rounded-xl bg-surface neo-shadow-sm active-press hover:bg-surface-container transition-all">
-          <span id="headerStreakIcon" class="text-xl">🔥</span>
+          <span id="headerStreakIcon" class="material-symbols-outlined text-xl text-orange-500">local_fire_department</span>
           <span id="headerStreakCount" class="font-extrabold text-xs text-on-background font-mono">0</span>
         </button>
 
@@ -183,12 +183,9 @@
       <div class="space-y-1.5">
         <div class="flex justify-between items-center">
           <h2 id="homeGreetingText" class="font-headline-lg-mobile text-2xl text-on-background font-extrabold">
-            Hai, kangen ya? ❤️
+            Hai, kangen ya?
           </h2>
-          <span class="text-2xl animate-bounce">✨</span>
         </div>
-        
-
       </div>
 
 
@@ -197,8 +194,9 @@
         <div class="absolute -top-6 -right-6 w-28 h-28 bg-white/20 rounded-full blur-lg pointer-events-none"></div>
         <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-secondary/30 rounded-full blur-xl pointer-events-none"></div>
 
-        <div class="inline-block bg-surface px-3 py-1 rounded-full neo-border-sm font-label-bold text-xs text-primary uppercase tracking-wider relative z-10">
-          📸 FITUR UTAMA
+        <div class="inline-flex items-center gap-1 bg-surface px-3 py-1 rounded-full neo-border-sm font-label-bold text-xs text-primary uppercase tracking-wider relative z-10">
+          <span class="material-symbols-outlined text-sm">photo_camera</span>
+          <span>FITUR UTAMA</span>
         </div>
 
         <h3 class="font-headline-md text-2xl font-extrabold text-white relative z-10 uppercase tracking-wide drop-shadow-sm">
@@ -296,7 +294,7 @@
       <div class="flex flex-col gap-3">
         <div class="flex justify-between items-center">
           <div>
-            <h2 class="font-headline-lg-mobile text-2xl text-on-background font-extrabold">Memori Kita 💌</h2>
+            <h2 class="font-headline-lg-mobile text-2xl text-on-background font-extrabold">Memori Kita</h2>
             <p class="text-xs text-on-surface-variant">Galeri privat hanya untuk kalian berdua</p>
           </div>
           
@@ -328,8 +326,9 @@
       
       <!-- Widget Intro Copy -->
       <div class="space-y-1">
-        <div class="inline-block bg-tertiary-container text-on-tertiary-container text-[11px] font-bold px-2.5 py-0.5 rounded-full neo-border-sm">
-          📱 SIMULASI LAYAR HP ANDROID
+        <div class="inline-flex items-center gap-1 bg-tertiary-container text-on-tertiary-container text-[11px] font-bold px-2.5 py-0.5 rounded-full neo-border-sm">
+          <span class="material-symbols-outlined text-xs">smartphone</span>
+          <span>SIMULASI LAYAR HP ANDROID</span>
         </div>
         <h2 class="font-headline-lg-mobile text-2xl text-on-background font-extrabold">Widget Layar Utama</h2>
         <p class="text-xs text-on-surface-variant">Lihat tampilan widget Octoleven langsung di Home Screen Android pasangan.</p>
@@ -345,14 +344,17 @@
           <span id="widgetCategoryLabel" class="text-[11px] font-bold text-primary bg-surface px-2 py-0.5 rounded-full neo-border-sm">Semua PAP</span>
         </div>
         <div class="grid grid-cols-3 gap-1.5">
-          <button type="button" onclick="setWidgetCategory('all')" id="btnCatAll" class="widget-cat-btn py-1.5 px-2 rounded-xl neo-border-sm text-xs font-bold bg-secondary-container text-on-secondary-container active-press transition-all">
-            💑 Semua
+          <button type="button" onclick="setWidgetCategory('all')" id="btnCatAll" class="widget-cat-btn py-1.5 px-2 rounded-xl neo-border-sm text-xs font-bold bg-secondary-container text-on-secondary-container active-press transition-all flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-xs">grid_view</span>
+            <span>Semua</span>
           </button>
-          <button type="button" onclick="setWidgetCategory('partner')" id="btnCatPartner" class="widget-cat-btn py-1.5 px-2 rounded-xl neo-border-sm text-xs font-bold bg-surface text-on-surface-variant hover:bg-secondary-container active-press transition-all">
-            👩 Pasangan
+          <button type="button" onclick="setWidgetCategory('partner')" id="btnCatPartner" class="widget-cat-btn py-1.5 px-2 rounded-xl neo-border-sm text-xs font-bold bg-surface text-on-surface-variant hover:bg-secondary-container active-press transition-all flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-xs">person</span>
+            <span>Pasangan</span>
           </button>
-          <button type="button" onclick="setWidgetCategory('me')" id="btnCatMe" class="widget-cat-btn py-1.5 px-2 rounded-xl neo-border-sm text-xs font-bold bg-surface text-on-surface-variant hover:bg-secondary-container active-press transition-all">
-            👦 Saya Saja
+          <button type="button" onclick="setWidgetCategory('me')" id="btnCatMe" class="widget-cat-btn py-1.5 px-2 rounded-xl neo-border-sm text-xs font-bold bg-surface text-on-surface-variant hover:bg-secondary-container active-press transition-all flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-xs">account_circle</span>
+            <span>Saya Saja</span>
           </button>
         </div>
       </div>
@@ -371,13 +373,13 @@
             2x2 Kotak
           </button>
           <button onclick="setWidgetSize('polaroid')" id="btnWidgetPolaroid" class="py-2 px-1.5 rounded-xl neo-border-sm font-label-bold text-[11px] bg-surface text-on-surface-variant active-press text-center">
-            2x2 Polaroid ✨
+            2x2 Polaroid
           </button>
           <button onclick="setWidgetSize('kangen')" id="btnWidgetKangen" class="py-2 px-1.5 rounded-xl neo-border-sm font-label-bold text-[11px] bg-surface text-on-surface-variant active-press text-center">
-            2x2 Kangen 🥺
+            2x2 Kangen
           </button>
           <button onclick="setWidgetSize('countdown')" id="btnWidgetCountdown" class="py-2 px-1.5 rounded-xl neo-border-sm font-label-bold text-[11px] bg-surface text-on-surface-variant active-press text-center">
-            4x2 Hari Jadian 💕
+            4x2 Hari Jadian
           </button>
         </div>
       </div>
@@ -422,19 +424,27 @@
           <!-- Android Bottom Dock App Icons -->
           <div class="grid grid-cols-4 gap-2 px-2 pb-2 text-center text-white/80 text-[10px]">
             <div class="flex flex-col items-center gap-1">
-              <div class="w-11 h-11 rounded-2xl bg-green-500 flex items-center justify-center text-white text-lg shadow">📞</div>
+              <div class="w-11 h-11 rounded-2xl bg-green-500 flex items-center justify-center text-white text-lg shadow">
+                <span class="material-symbols-outlined">call</span>
+              </div>
               <span>Telepon</span>
             </div>
             <div class="flex flex-col items-center gap-1">
-              <div class="w-11 h-11 rounded-2xl bg-blue-500 flex items-center justify-center text-white text-lg shadow">💬</div>
+              <div class="w-11 h-11 rounded-2xl bg-blue-500 flex items-center justify-center text-white text-lg shadow">
+                <span class="material-symbols-outlined">chat</span>
+              </div>
               <span>Pesan</span>
             </div>
             <div class="flex flex-col items-center gap-1">
-              <div class="w-11 h-11 rounded-2xl bg-primary-container flex items-center justify-center text-white text-lg neo-border-sm shadow">❤️</div>
+              <div class="w-11 h-11 rounded-2xl bg-primary-container flex items-center justify-center text-white text-lg neo-border-sm shadow">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+              </div>
               <span class="font-bold text-[#ff6b8a]">Octoleven</span>
             </div>
             <div class="flex flex-col items-center gap-1">
-              <div class="w-11 h-11 rounded-2xl bg-amber-500 flex items-center justify-center text-white text-lg shadow">📷</div>
+              <div class="w-11 h-11 rounded-2xl bg-amber-500 flex items-center justify-center text-white text-lg shadow">
+                <span class="material-symbols-outlined">photo_camera</span>
+              </div>
               <span>Kamera</span>
             </div>
           </div>
@@ -461,14 +471,13 @@
       <!-- Main Hubungkan Pasangan Card (Gambar 2 Layout) -->
       <div class="bg-surface-container-high rounded-2xl p-5 neo-border neo-shadow relative overflow-hidden flex flex-col gap-4">
         
-        <!-- Star Sparkle Decorative Badge (Top Right) -->
-        <div class="absolute top-4 right-4 w-12 h-12 bg-secondary-container rounded-full neo-border-sm flex items-center justify-center text-xl shadow-sm rotate-6">
-          <span>✨</span>
-        </div>
-
+      <!-- Main Hubungkan Pasangan Card (Gambar 2 Layout) -->
+      <div class="bg-surface-container-high rounded-2xl p-5 neo-border neo-shadow relative overflow-hidden flex flex-col gap-4">
+        
         <!-- Ruang Berdua Pill Badge -->
         <div class="inline-flex items-center gap-1.5 bg-[#ff6b8a] text-white px-3.5 py-1 rounded-full neo-border-sm font-label-bold text-[11px] font-extrabold uppercase tracking-wider w-fit">
-          <span class="text-xs">💖</span> RUANG BERDUA
+          <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">favorite</span>
+          <span>RUANG BERDUA</span>
         </div>
 
         <!-- Title & Subtitle -->
@@ -524,7 +533,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <div class="w-10 h-10 rounded-xl bg-primary-container text-white flex items-center justify-center neo-border-sm text-xl shadow-sm">
-              <span>🗓️</span>
+              <span class="material-symbols-outlined text-xl">event</span>
             </div>
             <div>
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-primary">TANGGAL JADIAN KITA</span>
@@ -539,7 +548,7 @@
         <!-- Duration & Next Mensiversary Banner -->
         <div class="bg-surface-container rounded-xl p-3 neo-border-sm flex items-center justify-between text-xs font-bold">
           <div class="flex items-center gap-1.5">
-            <span class="text-primary">❤️</span>
+            <span class="material-symbols-outlined text-sm text-primary" style="font-variation-settings: 'FILL' 1;">favorite</span>
             <span>Sudah Bersama:</span>
             <span id="daysTogetherCount" class="text-primary font-black text-sm">0 Hari</span>
           </div>
@@ -571,7 +580,7 @@
       <div onclick="openStreakInfoModal()" class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-3.5 neo-border neo-shadow flex items-center justify-between cursor-pointer active-press hover:bg-amber-100 transition-all">
         <div class="flex items-center gap-3">
           <div id="kitaStreakIconContainer" class="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center neo-border-sm text-xl flame-active shadow-sm">
-            🔥
+            <span class="material-symbols-outlined text-xl">local_fire_department</span>
           </div>
           <div>
             <div class="flex items-center gap-1.5">
@@ -699,8 +708,9 @@
         </div>
 
         <!-- Selected Badge Overlay on Image Preview -->
-        <div id="previewBadgeOverlay" class="absolute top-3 left-3 sticker-badge bg-secondary-container text-on-secondary-container text-xs px-2.5 py-1 hidden z-10">
-          Cafe ☕
+        <div id="previewBadgeOverlay" class="absolute top-3 left-3 sticker-badge bg-secondary-container text-on-secondary-container text-xs px-2.5 py-1 hidden z-10 font-bold flex items-center gap-1">
+          <span class="material-symbols-outlined text-xs">local_cafe</span>
+          <span>Cafe</span>
         </div>
 
       </div>
@@ -934,12 +944,6 @@
 
         <!-- Cute Extinguished Flame Character Illustration (SVG) -->
         <div class="relative mt-2 sad-flame-char">
-          <!-- Floating Smoke Puff -->
-          <div class="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-1 items-center smoke-particle pointer-events-none">
-            <span class="text-xl">💨</span>
-            <span class="text-xs opacity-60">💭</span>
-          </div>
-
           <!-- Cute Sad Flame SVG -->
           <svg width="130" height="130" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-md">
             <!-- Flame Body (Soft Slate/Cool Indigo unlit glow) -->
@@ -969,13 +973,13 @@
         <!-- Flame Status Header -->
         <div>
           <span class="text-[10px] font-extrabold uppercase tracking-widest text-orange-600 bg-orange-100 px-3 py-0.5 rounded-full neo-border-sm">
-            STATUS API STREAK: PADAM 💨
+            STATUS API STREAK: PADAM
           </span>
           <h3 class="font-headline-md text-xl font-black text-on-background mt-1.5">
             Api Cinta Kalian Hari Ini Belum Hidup!
           </h3>
           <p class="text-xs text-on-surface-variant font-medium mt-1 leading-relaxed">
-            Yuk segera aktifkan apinya! Minimal <span class="font-bold text-primary">1x PAP dari kedua belah pihak</span> setiap hari agar api streak kalian tetap menyala dan bertambah! 🔥
+            Yuk segera aktifkan apinya! Minimal <span class="font-bold text-primary">1x PAP dari kedua belah pihak</span> setiap hari agar api streak kalian tetap menyala dan bertambah!
           </p>
         </div>
 
@@ -983,15 +987,15 @@
         <div class="w-full bg-surface-container rounded-2xl p-3 neo-border-sm space-y-2 text-left">
           <div class="flex items-center justify-between text-xs font-bold">
             <span class="flex items-center gap-1.5">
-              <span>👤 Kamu:</span>
-              <span id="flameStatusMeText" class="text-red-600">Belum PAP ❌</span>
+              <span>Kamu:</span>
+              <span id="flameStatusMeText" class="text-red-600">Belum PAP</span>
             </span>
             <span id="flameStatusMeBadge" class="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-full">0/1 PAP</span>
           </div>
           <div class="flex items-center justify-between text-xs font-bold border-t border-outline-variant/40 pt-1.5">
             <span class="flex items-center gap-1.5">
-              <span>💕 Pasangan:</span>
-              <span id="flameStatusPartnerText" class="text-red-600">Belum PAP ❌</span>
+              <span>Pasangan:</span>
+              <span id="flameStatusPartnerText" class="text-red-600">Belum PAP</span>
             </span>
             <span id="flameStatusPartnerBadge" class="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-full">0/1 PAP</span>
           </div>
@@ -1000,7 +1004,7 @@
         <!-- Action Buttons -->
         <div class="w-full flex flex-col gap-2 pt-1">
           <button onclick="triggerPapFromFlameModal()" class="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white neo-border rounded-xl font-label-bold text-sm font-black flex items-center justify-center gap-2 neo-shadow-sm active-press hover:brightness-105 transition-all">
-            <span class="text-lg">🔥</span>
+            <span class="material-symbols-outlined text-lg">local_fire_department</span>
             <span>Kirim PAP Sekarang & Nyalakan Api!</span>
           </button>
           
@@ -1020,7 +1024,7 @@
         
         <div class="flex justify-between items-center border-b-2 border-on-background pb-2.5">
           <div class="flex items-center gap-2">
-            <span class="text-2xl">🗓️</span>
+            <span class="material-symbols-outlined text-2xl text-primary">event</span>
             <h3 class="font-headline-md text-base font-extrabold text-on-background">Atur Tanggal Jadian</h3>
           </div>
           <button onclick="closeAnniversaryModal()" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center neo-border-sm active-press">
@@ -1029,7 +1033,7 @@
         </div>
 
         <p class="text-xs text-on-surface-variant leading-relaxed">
-          Tentukan tanggal jadian kalian. Aplikasi akan menghitung hari bersama dan otomatis mengirimkan <span class="font-bold text-primary">notifikasi mensiversary setiap bulan dan anniversary setiap tahun!</span> 🎉
+          Tentukan tanggal jadian kalian. Aplikasi akan menghitung hari bersama dan otomatis mengirimkan <span class="font-bold text-primary">notifikasi mensiversary setiap bulan dan anniversary setiap tahun!</span>
         </p>
 
         <div class="space-y-3">
@@ -1095,10 +1099,10 @@
           <span class="text-[11px] text-on-surface-variant font-medium mt-1">Atau pilih avatar karakter:</span>
           
           <div class="flex gap-2">
-            <button type="button" onclick="setProfileAvatarPreset('Rio')" class="px-2.5 py-1 bg-surface neo-border-sm rounded-lg text-xs font-bold hover:bg-secondary-container">Boy 👦</button>
-            <button type="button" onclick="setProfileAvatarPreset('Nindya')" class="px-2.5 py-1 bg-surface neo-border-sm rounded-lg text-xs font-bold hover:bg-secondary-container">Girl 👧</button>
-            <button type="button" onclick="setProfileAvatarPreset('CuteCat')" class="px-2.5 py-1 bg-surface neo-border-sm rounded-lg text-xs font-bold hover:bg-secondary-container">Cat 🐱</button>
-            <button type="button" onclick="setProfileAvatarPreset('Boba')" class="px-2.5 py-1 bg-surface neo-border-sm rounded-lg text-xs font-bold hover:bg-secondary-container">Star ✨</button>
+            <button type="button" onclick="setProfileAvatarPreset('Rio')" class="px-2.5 py-1 bg-surface neo-border-sm rounded-lg text-xs font-bold hover:bg-secondary-container">Boy</button>
+            <button type="button" onclick="setProfileAvatarPreset('Nindya')" class="px-2.5 py-1 bg-surface neo-border-sm rounded-lg text-xs font-bold hover:bg-secondary-container">Girl</button>
+            <button type="button" onclick="setProfileAvatarPreset('CuteCat')" class="px-2.5 py-1 bg-surface neo-border-sm rounded-lg text-xs font-bold hover:bg-secondary-container">Cat</button>
+            <button type="button" onclick="setProfileAvatarPreset('Boba')" class="px-2.5 py-1 bg-surface neo-border-sm rounded-lg text-xs font-bold hover:bg-secondary-container">Star</button>
           </div>
         </div>
 
@@ -1189,7 +1193,7 @@
         
         <div class="flex justify-between items-center border-b-2 border-on-background pb-2.5">
           <div class="flex items-center gap-2">
-            <span class="text-2xl">🔥</span>
+            <span class="material-symbols-outlined text-2xl text-orange-500">local_fire_department</span>
             <h3 class="font-headline-md text-base font-extrabold text-on-background">Aturan Api Streak</h3>
           </div>
           <button onclick="closeStreakInfoModal()" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center neo-border-sm active-press">
@@ -1199,7 +1203,7 @@
 
         <div class="bg-gradient-to-r from-amber-50 to-orange-100 rounded-2xl p-4 neo-border-sm flex items-center gap-3">
           <div id="streakModalFlameIcon" class="w-12 h-12 rounded-2xl bg-orange-500 text-white flex items-center justify-center neo-border text-2xl flame-active">
-            🔥
+            <span class="material-symbols-outlined text-2xl text-white">local_fire_department</span>
           </div>
           <div>
             <h4 id="streakModalStreakCount" class="font-headline-md text-lg font-black text-on-background">0 Hari Streak</h4>
@@ -1212,8 +1216,8 @@
           <ul class="space-y-1.5 list-disc list-inside">
             <li>Kamu mengirimkan minimal 1x PAP per hari.</li>
             <li>Pasanganmu juga mengirimkan minimal 1x PAP per hari.</li>
-            <li>Jika keduanya sudah PAP, api berkobar 🔥 dan streak bertambah 1 hari!</li>
-            <li>Jika terlewat 1 hari, api padam 💨 dan kamu akan diingatkan saat membuka aplikasi.</li>
+            <li>Jika keduanya sudah PAP, api berkobar dan streak bertambah 1 hari!</li>
+            <li>Jika terlewat 1 hari, api padam dan kamu akan diingatkan saat membuka aplikasi.</li>
           </ul>
         </div>
 

@@ -21,7 +21,7 @@ let coupleData = {
 let moments = [];
 let currentTab = 'home';
 let currentFilter = 'all';
-let selectedSticker = 'Cafe ☕';
+let selectedSticker = 'Cafe';
 let currentCapturedImage = null;
 let currentMediaFile = null;
 let mediaStream = null;
@@ -138,7 +138,7 @@ function spawnFloatingEmoji(emoji, x, y) {
 }
 
 function triggerHeartBurst(x, y) {
-  const emojis = ['❤️', '💖', '🥰', '✨', '🥺'];
+  const emojis = ['love', 'star'];
   for (let i = 0; i < 6; i++) {
     setTimeout(() => {
       const offsetX = (Math.random() - 0.5) * 60;
@@ -182,7 +182,7 @@ async function hydrateWorkspace(workspaceId) {
         id: m.id,
         name: m.name,
         avatar: m.avatar || '',
-        moodEmoji: m.mood_emoji || '🥰',
+        moodEmoji: m.mood_emoji || 'favorite',
         moodText: m.mood_text || 'Lagi mikirin kamu!',
         nextDateLabel: m.next_date_label || '',
         nextDateTime: m.next_date_time || ''
@@ -200,7 +200,7 @@ async function hydrateWorkspace(workspaceId) {
     id: currentUser.id,
     name: userName,
     avatar: userAvatar,
-    moodEmoji: '🥰',
+    moodEmoji: 'favorite',
     moodText: 'Lagi mikirin kamu!'
   };
   
@@ -282,7 +282,7 @@ async function fetchMomentsFromSupabase() {
       (reactionsData || []).filter(r => r.pap_id === p.id).forEach(r => {
         pReactions[r.emoji] = (pReactions[r.emoji] || 0) + 1;
       });
-      if (!pReactions['❤️']) pReactions['❤️'] = p.like_count || 1;
+      if (!pReactions['love']) pReactions['love'] = p.like_count || 1;
 
       const pComments = (commentsData || []).filter(c => c.pap_id === p.id).map(c => ({
         senderId: c.user_id,
@@ -342,30 +342,30 @@ function initSupabaseRealtime() {
     .on('broadcast', { event: 'new_pap' }, (payload) => {
       const data = payload?.payload || {};
       if (data.senderId !== currentUser?.id) {
-        showToast(`${data.senderName || 'Pasangan'} baru saja mengirim PAP! 📸`, 'add_a_photo');
+        showToast(`${data.senderName || 'Pasangan'} baru saja mengirim PAP! `, 'add_a_photo');
         playSound('camera');
         vibrate([100, 50, 100]);
-        triggerLocalNotification('PAP Baru Masuk! 📸', `${data.senderName || 'Pasangan'} baru saja mengirim PAP spesial untukmu!`, data.imageUrl);
+        triggerLocalNotification('PAP Baru Masuk! ', `${data.senderName || 'Pasangan'} baru saja mengirim PAP spesial untukmu!`, data.imageUrl);
         fetchMomentsFromSupabase();
       }
     })
     .on('broadcast', { event: 'love_poke' }, (payload) => {
       const data = payload?.payload || {};
       if (data.senderId !== currentUser?.id) {
-        showToast(`${data.senderName || 'Pasangan'} lagi kangen banget sama kamu! 🥺❤️`, 'favorite');
+        showToast(`${data.senderName || 'Pasangan'} lagi kangen banget sama kamu! `, 'favorite');
         playSound('heart');
         vibrate([50, 100, 50, 100, 50]);
-        spawnFloatingEmoji('❤️', window.innerWidth / 2, 100);
-        triggerLocalNotification('Panggilan Rindu! 🥺❤️', `${data.senderName || 'Pasangan'} lagi kangen banget sama kamu!`);
+        spawnFloatingEmoji('', window.innerWidth / 2, 100);
+        triggerLocalNotification('Panggilan Rindu! ', `${data.senderName || 'Pasangan'} lagi kangen banget sama kamu!`);
       }
     })
     .on('broadcast', { event: 'reaction' }, (payload) => {
       const data = payload?.payload || {};
       if (data.senderId !== currentUser?.id) {
-        showToast(`${data.senderName || 'Pasangan'} bereaksi ${data.emoji || '❤️'} pada PAP kamu!`, 'favorite');
+        showToast(`${data.senderName || 'Pasangan'} bereaksi ${data.emoji || ''} pada PAP kamu!`, 'favorite');
         playSound('pop');
         vibrate(40);
-        triggerLocalNotification('Reaksi Baru! ❤️', `${data.senderName || 'Pasangan'} bereaksi pada foto kamu!`);
+        triggerLocalNotification('Reaksi Baru! ', `${data.senderName || 'Pasangan'} bereaksi pada foto kamu!`);
         fetchMomentsFromSupabase();
       }
     })
@@ -375,26 +375,26 @@ function initSupabaseRealtime() {
         showToast(`Komentar baru dari ${data.senderName || 'Pasangan'}: "${data.commentText || ''}"`, 'chat_bubble');
         playSound('toast');
         vibrate(40);
-        triggerLocalNotification('Komentar Baru! 💬', `${data.senderName || 'Pasangan'}: ${data.commentText || 'mengomentari fotomu'}`);
+        triggerLocalNotification('Komentar Baru! ', `${data.senderName || 'Pasangan'}: ${data.commentText || 'mengomentari fotomu'}`);
         fetchMomentsFromSupabase();
       }
     })
     .on('broadcast', { event: 'mood' }, (payload) => {
       const data = payload?.payload || {};
       if (data.senderId !== currentUser?.id) {
-        showToast(`Status mood ${data.senderName || 'Pasangan'} diperbarui: ${data.emoji || '🥰'} ${data.moodText || ''}`, 'sentiment_satisfied');
+        showToast(`Status mood ${data.senderName || 'Pasangan'} diperbarui: ${data.emoji || ''} ${data.moodText || ''}`, 'sentiment_satisfied');
         vibrate(30);
-        triggerLocalNotification('Status Mood Pasangan ✨', `${data.senderName || 'Pasangan'} sekarang lagi ${data.emoji || '🥰'} ${data.moodText || ''}`);
+        triggerLocalNotification('Status Mood Pasangan ', `${data.senderName || 'Pasangan'} sekarang lagi ${data.emoji || ''} ${data.moodText || ''}`);
         updateUIForActiveUser();
       }
     })
     .on('broadcast', { event: 'agenda' }, (payload) => {
       const data = payload?.payload || {};
       if (data.senderId !== currentUser?.id) {
-        showToast(`Agenda baru: "${data.title || ''}" oleh ${data.senderName || 'Pasangan'} 📅`, 'calendar_month');
+        showToast(`Agenda baru: "${data.title || ''}" oleh ${data.senderName || 'Pasangan'} `, 'calendar_month');
         playSound('toast');
         vibrate([50, 100, 50]);
-        triggerLocalNotification('Agenda Baru Pasangan! 📅', `${data.senderName || 'Pasangan'} menambahkan agenda: ${data.title || ''}`);
+        triggerLocalNotification('Agenda Baru Pasangan! ', `${data.senderName || 'Pasangan'} menambahkan agenda: ${data.title || ''}`);
         updateUIForActiveUser();
       }
     })
@@ -595,7 +595,7 @@ window.handleLoginSubmit = function() {
 
   playSound('heart');
   vibrate([50, 100, 50]);
-  showToast(`Selamat datang ${user.user_metadata.full_name}! ❤️`, 'favorite');
+  showToast(`Selamat datang ${user.user_metadata.full_name}! `, 'favorite');
 
   handleAuthSession({ user: currentUser });
 };
@@ -776,7 +776,7 @@ function updateUIForActiveUser() {
     id: currentUser?.id || coupleData.activeUser || 'user-rio-123',
     name: currentUser?.user_metadata?.full_name || 'Rio Refki Maulana',
     avatar: '',
-    moodEmoji: '🥰',
+    moodEmoji: 'favorite',
     moodText: 'Lagi mikirin kamu!'
   };
 
@@ -820,7 +820,7 @@ function updateUIForActiveUser() {
 
   const homeGreeting = document.getElementById('homeGreetingText');
   if (homeGreeting) {
-    homeGreeting.innerText = `Hai ${activeUser.name}! ✨`;
+    homeGreeting.innerText = `Hai ${activeUser.name}!`;
   }
 
   // Days Together & Tanggal Jadian
@@ -905,7 +905,7 @@ function renderHomeView() {
   reelContainer.innerHTML = recentList.map((m, idx) => {
     const rot = rotations[idx % rotations.length];
     const senderName = m.senderName || 'Pasangan';
-    const heartCount = m.reactions?.['❤️'] || 0;
+    const heartCount = m.reactions?.['love'] || 0;
     const isVideo = false;
 
     return `
@@ -913,7 +913,7 @@ function renderHomeView() {
         <div class="w-full h-28 bg-surface-variant rounded-lg flex items-center justify-center overflow-hidden neo-border-sm relative">
           ${isVideo ? `
             <video src="${m.videoUrl || m.video_url || m.image}" autoplay loop muted playsinline class="w-full h-full object-cover pointer-events-none"></video>
-            <span class="absolute top-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded neo-border-sm">🎥 10s</span>
+            <span class="absolute top-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded neo-border-sm"> 10s</span>
           ` : `
             <img src="${m.image}" alt="PAP thumbnail" class="w-full h-full object-cover"/>
           `}
@@ -921,11 +921,11 @@ function renderHomeView() {
         <div class="flex justify-between items-center mt-1">
           <span class="text-[10px] font-bold text-on-surface-variant line-clamp-1">${senderName}</span>
           <span class="text-[10px] font-bold text-primary flex items-center gap-0.5">
-            ❤️ ${heartCount}
+             ${heartCount}
           </span>
         </div>
         <span class="absolute -bottom-2 -right-1 bg-secondary-container text-on-secondary-container font-caption text-[10px] font-bold px-2 py-0.5 rounded-full neo-border-sm shadow-sm">
-          ${m.sticker || (isVideo ? 'Video 🎥' : 'PAP 📸')}
+          ${m.sticker || (isVideo ? 'Video ' : 'PAP ')}
         </span>
       </div>
     `;
@@ -965,7 +965,7 @@ function renderFeed(filter = 'all') {
   if (filteredMoments.length === 0) {
     feedContainer.innerHTML = `
       <div class="bg-surface-container neo-border rounded-xl p-8 text-center space-y-3 neo-shadow-sm">
-        <span class="text-4xl">📸</span>
+        <span class="text-4xl"></span>
         <h4 class="font-bold text-base">Belum Ada Momen PAP</h4>
         <p class="text-xs text-on-surface-variant">Kirimkan PAP foto atau video 10 detik pertama kamu untuk pacar tersayang!</p>
         <button onclick="openPapModal()" class="px-4 py-2 bg-primary-container text-white rounded-xl neo-border-sm text-xs font-bold neo-shadow-sm active-press">
@@ -980,7 +980,7 @@ function renderFeed(filter = 'all') {
     const senderName = moment.senderName || 'Pasangan';
     const cardBg = index % 2 === 0 ? 'bg-surface-container-highest' : 'bg-surface';
     const tilt = index % 3 === 1 ? '-rotate-1 hover:rotate-0' : (index % 3 === 2 ? 'rotate-1 hover:rotate-0' : '');
-    const reactions = moment.reactions || { '❤️': 1, '🥹': 0, '😂': 0, '🔥': 0 };
+    const reactions = moment.reactions || { 'love': 1, 'cute': 0, 'laugh': 0, 'fire': 0 };
     const isVideo = false;
 
     return `
@@ -1015,7 +1015,7 @@ function renderFeed(filter = 'all') {
             <video src="${moment.videoUrl || moment.video_url || moment.image}" autoplay loop muted playsinline class="w-full h-full object-cover"></video>
             <div class="absolute top-2.5 right-2.5 flex gap-1.5 items-center z-10">
               <span class="bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full neo-border-sm flex items-center gap-1 shadow">
-                <span>🎥</span> 10s
+                <span></span> 10s
               </span>
               <button onclick="toggleFeedVideoSound(this.parentElement.previousElementSibling, this)" class="w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center text-xs neo-border-sm shadow" title="Suara">
                 <span class="material-symbols-outlined text-xs">volume_off</span>
@@ -1031,17 +1031,17 @@ function renderFeed(filter = 'all') {
         </p>
 
         <div class="flex items-center gap-2 flex-wrap pt-1 border-t border-outline-variant/40">
-          <button onclick="handleFeedReaction('${moment.id}', '❤️', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-primary-fixed-dim">
-            <span>❤️</span> <span class="font-bold">${reactions['❤️'] || 0}</span>
+          <button onclick="handleFeedReaction('${moment.id}', '', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-primary-fixed-dim">
+            <span></span> <span class="font-bold">${reactions['love'] || 0}</span>
           </button>
-          <button onclick="handleFeedReaction('${moment.id}', '🥹', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-secondary-fixed">
-            <span>🥹</span> <span class="font-bold">${reactions['🥹'] || 0}</span>
+          <button onclick="handleFeedReaction('${moment.id}', '', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-secondary-fixed">
+            <span></span> <span class="font-bold">${reactions['cute'] || 0}</span>
           </button>
-          <button onclick="handleFeedReaction('${moment.id}', '😂', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-tertiary-fixed">
-            <span>😂</span> <span class="font-bold">${reactions['😂'] || 0}</span>
+          <button onclick="handleFeedReaction('${moment.id}', '', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-tertiary-fixed">
+            <span></span> <span class="font-bold">${reactions['laugh'] || 0}</span>
           </button>
-          <button onclick="handleFeedReaction('${moment.id}', '🔥', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-primary-fixed-dim">
-            <span>🔥</span> <span class="font-bold">${reactions['🔥'] || 0}</span>
+          <button onclick="handleFeedReaction('${moment.id}', '', event)" class="bg-surface rounded-full px-3 py-1 neo-border-sm neo-shadow-sm active-press flex items-center gap-1 font-label-bold text-xs hover:bg-primary-fixed-dim">
+            <span></span> <span class="font-bold">${reactions['fire'] || 0}</span>
           </button>
         </div>
 
@@ -1074,7 +1074,7 @@ async function downloadPapImage(imageUrl, rawCaption = 'pap') {
     return;
   }
 
-  showToast('Menyimpan foto ke perangkat... 📥', 'info');
+  showToast('Menyimpan foto ke perangkat... ', 'info');
   vibrate(25);
 
   try {
@@ -1089,7 +1089,7 @@ async function downloadPapImage(imageUrl, rawCaption = 'pap') {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast('Foto PAP berhasil diunduh! 📥💖', 'check_circle');
+      showToast('Foto PAP berhasil diunduh! ', 'check_circle');
       playSound('snap');
       return;
     }
@@ -1108,7 +1108,7 @@ async function downloadPapImage(imageUrl, rawCaption = 'pap') {
     document.body.removeChild(a);
 
     setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-    showToast('Foto PAP berhasil disimpan! 📥💖', 'check_circle');
+    showToast('Foto PAP berhasil disimpan! ', 'check_circle');
     playSound('snap');
   } catch (err) {
     console.warn('Direct blob download notice:', err);
@@ -1120,7 +1120,7 @@ async function downloadPapImage(imageUrl, rawCaption = 'pap') {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    showToast('Foto dibuka di galeri unduhan! 📥✨', 'check_circle');
+    showToast('Foto dibuka di galeri unduhan! ', 'check_circle');
   }
 }
 
@@ -1191,7 +1191,7 @@ async function submitFeedComment(momentId) {
   saveData();
   vibrate(25);
   playSound('toast');
-  showToast('Balasan terkirim ke pasangan! 💬', 'send');
+  showToast('Balasan terkirim ke pasangan! ', 'send');
 
   if (isSupabaseReady() && currentUser) {
     const supabase = getSupabase();
@@ -1203,7 +1203,7 @@ async function submitFeedComment(momentId) {
     });
     
     // Kirim notifikasi komentar
-    sendPushNotification('Komentar Baru! 💬', `${activeUser.name}: "${commentText}"`, { event: 'comment' });
+    sendPushNotification('Komentar Baru! ', `${activeUser.name}: "${commentText}"`, { event: 'comment' });
   }
 
   inputEl.value = '';
@@ -1253,14 +1253,14 @@ function updateSimulatedWidget() {
         <div class="w-[48%] aspect-[4/3] rounded-xl overflow-hidden neo-border-sm bg-surface-dim relative shrink-0">
           <img src="${latestMoment.image}" alt="PAP Widget" class="w-full h-full object-cover"/>
           <span class="absolute bottom-1 left-1 bg-primary-container text-white text-[9px] font-bold px-1.5 py-0.5 rounded neo-border-sm shadow-sm">
-            ${senderName} ❤️
+            ${senderName} 
           </span>
         </div>
         <div class="w-[52%] flex flex-col justify-between py-0.5">
           <div>
             <div class="flex items-center justify-between gap-1 mb-1">
               <span class="font-label-bold text-[10px] font-extrabold text-primary flex items-center gap-0.5">
-                <span>❤️</span> Octoleven
+                <span></span> Octoleven
               </span>
               <span class="text-[9px] font-bold bg-secondary-container px-1.5 py-0.5 rounded neo-border-sm text-on-secondary-container">
                 ${formatTimeAgo(latestMoment.timestamp)}
@@ -1272,10 +1272,10 @@ function updateSimulatedWidget() {
           </div>
           <div class="flex items-center justify-between mt-1 pt-1 border-t border-outline-variant/30">
             <span class="text-[9px] font-bold text-primary bg-surface-container px-1.5 py-0.5 rounded neo-border-sm">
-              ${latestMoment.sticker || 'PAP ✨'}
+              ${latestMoment.sticker || 'PAP '}
             </span>
             <button onclick="event.stopPropagation(); triggerWidgetQuickReaction()" class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center neo-border-sm text-[10px] active-press hover:scale-110" title="Kirim Cinta">
-              ❤️
+              
             </button>
           </div>
         </div>
@@ -1287,12 +1287,12 @@ function updateSimulatedWidget() {
         <img src="${latestMoment.image}" alt="PAP Widget Full" class="w-full h-full object-cover"/>
         <div class="absolute top-2 left-2">
           <span class="bg-secondary-container text-on-secondary-container text-[9px] font-extrabold px-2 py-0.5 rounded neo-border-sm shadow-sm">
-            ${latestMoment.sticker || 'PAP Spesial ✨'}
+            ${latestMoment.sticker || 'PAP Spesial '}
           </span>
         </div>
         <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 text-white flex flex-col justify-end">
           <div class="flex justify-between items-center text-[10px] font-bold text-[#fed74c]">
-            <span>${senderName} ❤️</span>
+            <span>${senderName} </span>
             <span class="text-[9px] text-white/80 font-normal">${formatTimeAgo(latestMoment.timestamp)}</span>
           </div>
           <p class="text-xs font-bold line-clamp-1 mt-0.5">"${latestMoment.caption}"</p>
@@ -1305,10 +1305,10 @@ function updateSimulatedWidget() {
         <div class="relative rounded-xl overflow-hidden neo-border-sm bg-surface-dim aspect-square">
           <img src="${latestMoment.image}" alt="PAP Widget Square" class="w-full h-full object-cover"/>
           <span class="absolute top-1.5 left-1.5 bg-primary-container text-white text-[8px] font-bold px-1.5 py-0.5 rounded neo-border-sm shadow-sm">
-            ${latestMoment.sticker || 'PAP ✨'}
+            ${latestMoment.sticker || 'PAP '}
           </span>
           <div class="absolute inset-x-0 bottom-0 bg-black/70 p-1.5 text-white">
-            <span class="text-[9px] font-bold text-[#fed74c] block">${senderName} ❤️</span>
+            <span class="text-[9px] font-bold text-[#fed74c] block">${senderName} </span>
             <p class="text-[9px] line-clamp-1 leading-tight text-white/90">"${latestMoment.caption}"</p>
           </div>
         </div>
@@ -1320,7 +1320,7 @@ function updateSimulatedWidget() {
         <div class="relative rounded-lg overflow-hidden neo-border-sm bg-gray-100 aspect-square w-full">
           <img src="${latestMoment.image}" alt="PAP Polaroid" class="w-full h-full object-cover"/>
           <span class="absolute top-1.5 left-1.5 bg-secondary-container text-on-secondary-container text-[8px] font-bold px-1.5 py-0.5 rounded neo-border-sm">
-            ${latestMoment.sticker || 'Manis ✨'}
+            ${latestMoment.sticker || 'Manis '}
           </span>
         </div>
         <div class="text-center w-full pt-1">
@@ -1340,14 +1340,14 @@ function updateSimulatedWidget() {
               <span class="text-[8px] text-on-surface-variant">${formatTimeAgo(latestMoment.timestamp)}</span>
             </div>
           </div>
-          <span class="text-base animate-bounce">🥰</span>
+          <span class="text-base animate-bounce"></span>
         </div>
         <div class="bg-primary/10 rounded-xl p-2 text-center neo-border-sm">
           <span class="text-[9px] font-bold text-primary uppercase block">Panggilan Rindu</span>
-          <span class="text-base font-extrabold text-primary">❤️ Kangen Banget!</span>
+          <span class="text-base font-extrabold text-primary"> Kangen Banget!</span>
         </div>
         <button onclick="event.stopPropagation(); sendLovePoke()" class="w-full py-1.5 bg-primary-container text-white rounded-lg neo-border-sm text-[10px] font-bold active-press flex items-center justify-center gap-1">
-          <span>🥺</span> Balas Rindu
+          <span></span> Balas Rindu
         </button>
       </div>
     `;
@@ -1357,14 +1357,14 @@ function updateSimulatedWidget() {
         <div class="w-[45%] aspect-square rounded-xl overflow-hidden neo-border-sm bg-surface-dim relative shrink-0">
           <img src="${latestMoment.image}" alt="Couple" class="w-full h-full object-cover"/>
           <span class="absolute top-1 left-1 bg-secondary-container text-on-secondary-container text-[8px] font-bold px-1.5 py-0.5 rounded neo-border-sm">
-            Together 💕
+            Together 
           </span>
         </div>
         <div class="w-[55%] flex flex-col justify-center py-1">
-          <span class="text-[10px] font-bold text-primary">Kisah Cinta Kita ❤️</span>
+          <span class="text-[10px] font-bold text-primary">Kisah Cinta Kita </span>
           <span class="text-xl font-black text-on-background leading-tight">${daysTogether}</span>
           <p class="text-[10px] font-semibold text-on-surface-variant line-clamp-1 mt-1">"${latestMoment.caption}"</p>
-          <span class="text-[9px] font-bold text-secondary mt-1">✨ Buka Octoleven</span>
+          <span class="text-[9px] font-bold text-secondary mt-1"> Buka Octoleven</span>
         </div>
       </div>
     `;
@@ -1379,7 +1379,7 @@ function updateSimulatedWidget() {
         senderName: senderName,
         caption: latestMoment.caption || '',
         timeText: formatTimeAgo(latestMoment.timestamp),
-        tagText: latestMoment.sticker || 'PAP ✨',
+        tagText: latestMoment.sticker || 'PAP ',
         daysCount: daysTogether
       })
         .then(() => console.log('Native Android Widget updated successfully!'))
@@ -1490,10 +1490,10 @@ function triggerWidgetQuickReaction() {
   playSound('heart');
   vibrate(50);
   triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
-  showToast('Reaksi ❤️ dikirim dari Widget ke HP Pasangan!', 'favorite');
+  showToast('Reaksi  dikirim dari Widget ke HP Pasangan!', 'favorite');
   
   if (moments.length > 0) {
-    handleFeedReaction(moments[0].id, '❤️', null);
+    handleFeedReaction(moments[0].id, '', null);
   }
 }
 
@@ -1501,7 +1501,7 @@ function triggerWidgetQuickReaction() {
 function openPapModal() {
   currentCapturedImage = null;
   currentMediaFile = null;
-  selectedSticker = 'Cafe ☕';
+  selectedSticker = 'Cafe';
 
   requestNotificationPermission();
 
@@ -1669,12 +1669,12 @@ const MOOD_ICON_MAP = {
   'restaurant': 'restaurant',
   'sentiment_dissatisfied': 'sentiment_dissatisfied',
   'laptop_chromebook': 'laptop_chromebook',
-  '🥰': 'favorite',
-  '😊': 'sentiment_very_satisfied',
-  '😴': 'bedtime',
-  '🍜': 'restaurant',
-  '🥺': 'sentiment_dissatisfied',
-  '☕': 'local_cafe'
+  '': 'favorite',
+  '': 'sentiment_very_satisfied',
+  '': 'bedtime',
+  '': 'restaurant',
+  '': 'sentiment_dissatisfied',
+  '': 'local_cafe'
 };
 
 const STICKER_ICON_MAP = {
@@ -1755,13 +1755,13 @@ async function submitNewPap() {
   }
 
   const captionInput = document.getElementById('papCaptionInput');
-  const caption = captionInput?.value.trim() || 'PAP hari ini buat kamu tersayang! ❤️';
+  const caption = captionInput?.value.trim() || 'PAP hari ini buat kamu tersayang! ';
   const activeUser = coupleData.users[coupleData.activeUser] || { name: 'Pengguna' };
 
   closePapModal();
   playSound('heart');
   vibrate([40, 60, 40]);
-  showToast('Mengompres & mengunggah foto... 🚀', 'cloud_upload');
+  showToast('Mengompres & mengunggah foto... ', 'cloud_upload');
 
   // Smart client-side compression before upload (max 1280px, quality 0.85)
   let fileSource = currentMediaFile || currentCapturedImage;
@@ -1815,16 +1815,16 @@ async function submitNewPap() {
       if (dbError) throw dbError;
 
       triggerConfetti();
-      showToast('PAP terkirim dan tersinkron! 💖', 'check_circle');
+      showToast('PAP terkirim dan tersinkron! ', 'check_circle');
       
       // Kirim Push Notification dengan payload lengkap dan widget update
-      sendPushNotification('PAP Baru Masuk! 📸', `${activeUser.name} ngirim PAP spesial nih, yuk intip!`, { 
+      sendPushNotification('PAP Baru Masuk! ', `${activeUser.name} ngirim PAP spesial nih, yuk intip!`, { 
         event: 'new_pap',
         widget_update: 'true',
         imageUrl: publicPhotoUrl,
         senderName: activeUser.name,
         caption: caption || '',
-        tagText: selectedSticker || 'PAP ✨'
+        tagText: selectedSticker || 'PAP '
       });
       
       fetchMomentsFromSupabase();
@@ -1844,7 +1844,7 @@ async function submitNewPap() {
     caption: caption,
     sticker: selectedSticker,
     timestamp: new Date().toISOString(),
-    reactions: { '❤️': 1 },
+    reactions: { 'love': 1 },
     comments: []
   };
   moments.unshift(newMoment);
@@ -1853,7 +1853,7 @@ async function submitNewPap() {
   renderFeed(currentFilter);
   updateSimulatedWidget();
   triggerConfetti();
-  showToast('PAP tersimpan di perangkat! 💖', 'check_circle');
+  showToast('PAP tersimpan di perangkat! ', 'check_circle');
 
   triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
 }
@@ -1880,7 +1880,7 @@ async function setUserMood(iconName, text, label = '') {
   playSound('toast');
   vibrate(30);
   triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
-  showToast(`Mood kamu diperbarui: "${text}" ✨`, 'mood');
+  showToast(`Mood kamu diperbarui: "${text}" `, 'mood');
   updateUIForActiveUser();
 
   if (isSupabaseReady() && currentUser) {
@@ -1895,7 +1895,7 @@ async function setUserMood(iconName, text, label = '') {
     });
 
     // Kirim Push Notification update mood
-    sendPushNotification('Mood Pasangan Diperbarui ✨', `${activeUser.name} sekarang lagi: ${text}`, {
+    sendPushNotification('Mood Pasangan Diperbarui ', `${activeUser.name} sekarang lagi: ${text}`, {
       event: 'mood',
       senderName: activeUser.name,
       tagText: label || 'Mood',
@@ -1913,7 +1913,7 @@ async function sendLovePoke() {
   playSound('heart');
   vibrate([50, 50, 50]);
   triggerHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
-  showToast(`Love poke terkirim ke ${partnerName}! 💖 "Aku kangen kamu!"`, 'favorite');
+  showToast(`Love poke terkirim ke ${partnerName}!  "Aku kangen kamu!"`, 'favorite');
 
   if (isSupabaseReady() && supabaseRealtimeChannel && currentUser) {
     supabaseRealtimeChannel.send({
@@ -1927,10 +1927,10 @@ async function sendLovePoke() {
   }
 
   // Kirim ke backend FCM untuk Push Notification
-  sendPushNotification('Panggilan Rindu! 🥺❤️', `${activeUser.name} lagi kangen banget sama kamu!`, { 
+  sendPushNotification('Panggilan Rindu! ', `${activeUser.name} lagi kangen banget sama kamu!`, { 
     event: 'kangen',
     senderName: activeUser.name,
-    tagText: 'Rindu 🥺'
+    tagText: 'Rindu '
   });
 }
 
@@ -2062,11 +2062,11 @@ async function requestPushPermissionsAndRegister() {
   // Update Status Badge di UI
   const badge = document.getElementById('fcmStatusBadge');
   if (badge) {
-    badge.innerText = 'Aktif ✅';
+    badge.innerText = 'Aktif';
     badge.className = 'text-[10px] font-bold px-2 py-0.2 rounded-full neo-border-sm bg-green-100 text-green-800';
   }
 
-  showToast('Izin notifikasi pasangan aktif! 🔔', 'notifications');
+  showToast('Izin notifikasi pasangan aktif! ', 'notifications');
 }
 
 // --- Pairing & Code Helpers ---
@@ -2143,7 +2143,7 @@ async function connectPartnerCode() {
     initSupabaseRealtime();
     vibrate(50);
     playSound('heart');
-    showToast(`Berhasil terhubung ke ruang ${code}! ❤️`, 'verified');
+    showToast(`Berhasil terhubung ke ruang ${code}! `, 'verified');
     if (input) input.value = '';
   } catch (error) {
     console.error('Pairing gagal:', error);
@@ -2265,13 +2265,13 @@ function updateStreakUI() {
   if (headerStreakIcon && headerStreakCount) {
     headerStreakCount.innerText = streak.streakCount;
     if (streak.todayStatus === 'active') {
-      headerStreakIcon.innerText = '🔥';
+      headerStreakIcon.innerText = 'local_fire_department';
       headerStreakIcon.className = 'text-xl flame-active inline-block';
     } else if (streak.todayStatus === 'pending') {
       headerStreakIcon.innerText = '⏳';
       headerStreakIcon.className = 'text-xl inline-block';
     } else {
-      headerStreakIcon.innerText = '💨';
+      headerStreakIcon.innerText = 'local_fire_department';
       headerStreakIcon.className = 'text-xl inline-block';
     }
   }
@@ -2284,11 +2284,11 @@ function updateStreakUI() {
   if (homeStreakTitle && homeStreakBadge && homeStreakSubtitle) {
     homeStreakTitle.innerText = `Api Streak: ${streak.streakCount} Hari`;
     if (streak.todayStatus === 'active') {
-      homeStreakBadge.innerText = '🔥 Menyala';
+      homeStreakBadge.innerText = 'Menyala';
       homeStreakBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-orange-500 text-white neo-border-sm';
       homeStreakSubtitle.innerText = 'Kalian berdua sudah kirim PAP hari ini! Pertahankan streak!';
       if (homeStreakFlameIcon) {
-        homeStreakFlameIcon.innerText = '🔥';
+        homeStreakFlameIcon.innerText = 'local_fire_department';
         homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center neo-border-sm text-2xl flame-active shadow-sm';
       }
     } else if (streak.todayStatus === 'pending') {
@@ -2296,15 +2296,15 @@ function updateStreakUI() {
       homeStreakBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 neo-border-sm';
       homeStreakSubtitle.innerText = streak.meSentToday ? 'Kamu sudah PAP! Menunggu giliran pasangan.' : 'Pasangan sudah PAP! Yuk kirim PAP giliranmu!';
       if (homeStreakFlameIcon) {
-        homeStreakFlameIcon.innerText = '🔥';
+        homeStreakFlameIcon.innerText = 'local_fire_department';
         homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center neo-border-sm text-2xl shadow-sm';
       }
     } else {
-      homeStreakBadge.innerText = '💨 Belum Hidup';
+      homeStreakBadge.innerText = 'Belum Hidup';
       homeStreakBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 neo-border-sm';
       homeStreakSubtitle.innerText = 'Kirim PAP hari ini untuk mengaktifkan apinya!';
       if (homeStreakFlameIcon) {
-        homeStreakFlameIcon.innerText = '💨';
+        homeStreakFlameIcon.innerText = 'local_fire_department';
         homeStreakFlameIcon.className = 'w-10 h-10 rounded-xl bg-slate-400 text-white flex items-center justify-center neo-border-sm text-2xl shadow-sm';
       }
     }
@@ -2317,7 +2317,7 @@ function updateStreakUI() {
   if (kitaStreakDayText && kitaStreakStatusPill) {
     kitaStreakDayText.innerText = `Api Streak: ${streak.streakCount} Hari`;
     if (streak.todayStatus === 'active') {
-      kitaStreakStatusPill.innerText = '🔥 Menyala';
+      kitaStreakStatusPill.innerText = 'Menyala';
       kitaStreakStatusPill.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-orange-500 text-white neo-border-sm';
       if (kitaStreakIconContainer) kitaStreakIconContainer.className = 'w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center neo-border-sm text-xl flame-active shadow-sm';
     } else if (streak.todayStatus === 'pending') {
@@ -2325,7 +2325,7 @@ function updateStreakUI() {
       kitaStreakStatusPill.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 neo-border-sm';
       if (kitaStreakIconContainer) kitaStreakIconContainer.className = 'w-10 h-10 rounded-xl bg-amber-400 text-white flex items-center justify-center neo-border-sm text-xl shadow-sm';
     } else {
-      kitaStreakStatusPill.innerText = '💨 Belum Hidup';
+      kitaStreakStatusPill.innerText = 'Belum Hidup';
       kitaStreakStatusPill.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 neo-border-sm';
       if (kitaStreakIconContainer) kitaStreakIconContainer.className = 'w-10 h-10 rounded-xl bg-slate-400 text-white flex items-center justify-center neo-border-sm text-xl shadow-sm';
     }
@@ -2338,14 +2338,14 @@ function updateStreakUI() {
   const flameStatusPartnerBadge = document.getElementById('flameStatusPartnerBadge');
   if (flameStatusMeText && flameStatusPartnerText) {
     if (streak.meSentToday) {
-      flameStatusMeText.innerText = 'Sudah PAP ✅';
+      flameStatusMeText.innerText = 'Sudah PAP';
       flameStatusMeText.className = 'text-emerald-600 font-bold';
       if (flameStatusMeBadge) {
         flameStatusMeBadge.innerText = '1/1 PAP';
         flameStatusMeBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold';
       }
     } else {
-      flameStatusMeText.innerText = 'Belum PAP ❌';
+      flameStatusMeText.innerText = 'Belum PAP';
       flameStatusMeText.className = 'text-red-600 font-bold';
       if (flameStatusMeBadge) {
         flameStatusMeBadge.innerText = '0/1 PAP';
@@ -2354,14 +2354,14 @@ function updateStreakUI() {
     }
 
     if (streak.partnerSentToday) {
-      flameStatusPartnerText.innerText = 'Sudah PAP ✅';
+      flameStatusPartnerText.innerText = 'Sudah PAP';
       flameStatusPartnerText.className = 'text-emerald-600 font-bold';
       if (flameStatusPartnerBadge) {
         flameStatusPartnerBadge.innerText = '1/1 PAP';
         flameStatusPartnerBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold';
       }
     } else {
-      flameStatusPartnerText.innerText = 'Belum PAP ❌';
+      flameStatusPartnerText.innerText = 'Belum PAP';
       flameStatusPartnerText.className = 'text-red-600 font-bold';
       if (flameStatusPartnerBadge) {
         flameStatusPartnerBadge.innerText = '0/1 PAP';
@@ -2377,13 +2377,13 @@ function updateStreakUI() {
   if (streakModalStreakCount && streakModalStatusText) {
     streakModalStreakCount.innerText = `${streak.streakCount} Hari Streak`;
     if (streak.todayStatus === 'active') {
-      streakModalStatusText.innerText = '🔥 Api Berkobar! Kedua pasangan sudah PAP hari ini.';
+      streakModalStatusText.innerText = 'Api Berkobar! Kedua pasangan sudah PAP hari ini.';
       streakModalStatusText.className = 'text-xs text-orange-600 font-bold';
     } else if (streak.todayStatus === 'pending') {
       streakModalStatusText.innerText = '⏳ Api Sedang Menunggu! 1 pasangan belum PAP.';
       streakModalStatusText.className = 'text-xs text-amber-600 font-bold';
     } else {
-      streakModalStatusText.innerText = '💨 Api Padam! Belum ada yang kirim PAP hari ini.';
+      streakModalStatusText.innerText = 'Api Padam! Belum ada yang kirim PAP hari ini.';
       streakModalStatusText.className = 'text-xs text-slate-600 font-bold';
     }
   }
@@ -2503,7 +2503,7 @@ async function saveAnniversaryDate() {
   closeAnniversaryModal();
   updateUIForActiveUser();
   triggerConfetti();
-  showToast('Tanggal jadian berhasil diperbarui! 🎉', 'favorite');
+  showToast('Tanggal jadian berhasil diperbarui! ', 'favorite');
 }
 
 // Check Mensiversary / Anniversary Notifications
@@ -2522,12 +2522,12 @@ function checkAnniversaryNotification() {
       const isYearly = startDate.getMonth() === now.getMonth() && startDate.getFullYear() !== now.getFullYear();
       const yearsDiff = now.getFullYear() - startDate.getFullYear();
 
-      let title = 'Happy Mensiversary! 🎉';
-      let body = 'Hari ini adalah tanggal jadian spesial kalian! Selamat ya! ❤️';
+      let title = 'Happy Mensiversary! ';
+      let body = 'Hari ini adalah tanggal jadian spesial kalian! Selamat ya! ';
 
       if (isYearly) {
-        title = `Happy Anniversary ke-${yearsDiff} Tahun! 🎂`;
-        body = `Selamat ulang tahun jadian ke-${yearsDiff} tahun bersama pasangan tercinta! ❤️✨`;
+        title = `Happy Anniversary ke-${yearsDiff} Tahun! `;
+        body = `Selamat ulang tahun jadian ke-${yearsDiff} tahun bersama pasangan tercinta! `;
       }
 
       showToast(title, 'celebration');
@@ -2816,7 +2816,7 @@ function applyAvatarCrop() {
   closeAvatarCropper();
   playSound('snap');
   vibrate(30);
-  showToast('Foto profil dipotong! Klik "Simpan Profil". ✨', 'check_circle');
+  showToast('Foto profil dipotong! Klik "Simpan Profil". ', 'check_circle');
 }
 
 async function saveProfileChanges() {
@@ -2828,7 +2828,7 @@ async function saveProfileChanges() {
     return;
   }
 
-  showToast('Menyimpan perubahan profil... ✨', 'info');
+  showToast('Menyimpan perubahan profil... ', 'info');
 
   // Upload custom avatar image to Supabase Storage if uploaded from file
   if (pendingAvatarFile && isSupabaseReady() && currentUser) {
@@ -2876,7 +2876,7 @@ async function saveProfileChanges() {
   closeEditProfileModal();
   updateUIForActiveUser();
   renderHomeView();
-  showToast('Profil berhasil diperbarui! ✨', 'check_circle');
+  showToast('Profil berhasil diperbarui! ', 'check_circle');
 }
 
 // --- AGENDA & DEVICE INTERNAL CALENDAR INTEGRATION ---
@@ -2890,7 +2890,7 @@ function exportAgendaToDeviceCalendar(title, dateStr, timeStr, notes = '') {
     return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   };
 
-  const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatICSDate(startDate)}/${formatICSDate(endDate)}&details=${encodeURIComponent(notes || 'Agenda kencan bersama pasangan ❤️ (Octoleven)')}`;
+  const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatICSDate(startDate)}/${formatICSDate(endDate)}&details=${encodeURIComponent(notes || 'Agenda kencan bersama pasangan  (Octoleven)')}`;
 
   // Use window.open with _system to prompt Android to open the default browser or Google Calendar app
   if (window.Capacitor && window.Capacitor.Plugins) {
@@ -2965,7 +2965,7 @@ async function submitAgenda() {
         await LocalNotifications.schedule({
           notifications: [
             {
-              title: "Alarm Agenda Pasangan! ❤️",
+              title: "Alarm Agenda Pasangan! ",
               body: `Waktunya: ${title} sekarang!`,
               id: Math.floor(Math.random() * 100000),
               schedule: { at: scheduleDate },
@@ -2982,7 +2982,7 @@ async function submitAgenda() {
     // Integrasi Kalender Internal HP (.ics & Intent)
     if (syncCalendarCheckbox && syncCalendarCheckbox.checked) {
       exportAgendaToDeviceCalendar(title, dateStr, timeStr);
-      showToast('Agenda diekspor ke Kalender HP! 📅', 'event_available');
+      showToast('Agenda diekspor ke Kalender HP! ', 'event_available');
     }
 
     closeAgendaModal();
@@ -2994,7 +2994,7 @@ async function submitAgenda() {
     }
     
     // Kirim notifikasi agenda
-    sendPushNotification('Agenda Baru Pasangan! 📅', `${currentUser?.name || 'Pasangan'} akan ${title} pada ${scheduleDate.toLocaleString('id-ID')}`, { event: 'agenda' });
+    sendPushNotification('Agenda Baru Pasangan! ', `${currentUser?.name || 'Pasangan'} akan ${title} pada ${scheduleDate.toLocaleString('id-ID')}`, { event: 'agenda' });
 
     updateUIForActiveUser();
     
